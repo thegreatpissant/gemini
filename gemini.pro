@@ -15,8 +15,29 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        gemini.cpp
+        gemini.cpp \
+    doc/test5.c \
+    doc/project1.cpp
 
 HEADERS  += gemini.h
 
 FORMS    += gemini.ui
+
+OTHER_FILES += \
+    README.md \
+    LICENSE \
+    doc/test4.s \
+    doc/test3.s \
+    doc/test2.s \
+    doc/test1.s \
+    doc/WindowsFormsApplication1.zip \
+    doc/project1.html \
+    doc/image30.gif \
+    doc/image17.gif \
+    doc/image16.gif \
+    doc/image13.gif \
+    doc/image12.gif \
+    doc/image9.gif \
+    doc/image8.gif \
+    doc/image6.gif \
+    doc/image4.gif
