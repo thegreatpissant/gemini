@@ -1,3 +1,8 @@
+/*
+ *  James Feister
+ *  cisc360 Gemini project
+ */
+
 #ifndef GEMINI_H
 #define GEMINI_H
 

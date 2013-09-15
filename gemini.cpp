@@ -1,3 +1,8 @@
+/*
+ *  James Feister
+ *  cisc360 Gemini project
+ */
+
 #include "gemini.h"
 #include "ui_gemini.h"
 

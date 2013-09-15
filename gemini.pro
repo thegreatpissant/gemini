@@ -2,6 +2,8 @@
 #
 # Project created by QtCreator 2013-09-14T18:53:49
 #
+# James Feister
+# cisc360 Gemini Project
 #-------------------------------------------------
 
 QT       += core gui
