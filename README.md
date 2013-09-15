@@ -1,4 +1,6 @@
 gemini
 ======
 
-morcraf udel cisc360 gemini project
+By: James Feister
+
+morecraf udel cisc360 gemini project
