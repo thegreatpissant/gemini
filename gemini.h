@@ -20,6 +20,11 @@ public:
     explicit gemini(QWidget *parent = 0);
     ~gemini();
 
+private slots:
+    void on_actionQuit_triggered();
+
+    void on_actionLoad_triggered();
+
 private:
     Ui::gemini *ui;
 };

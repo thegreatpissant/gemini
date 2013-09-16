@@ -16,10 +16,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         gemini.cpp \
-    doc/test5.c \
-    doc/project1.cpp
+    cpu.cpp \
+    ipr.cpp \
+    memory.cpp
 
-HEADERS  += gemini.h
+
+HEADERS  += gemini.h \
+    cpu.h \
+    ipr.h \
+    memory.h
 
 FORMS    += gemini.ui
 
@@ -40,4 +45,6 @@ OTHER_FILES += \
     doc/image9.gif \
     doc/image8.gif \
     doc/image6.gif \
-    doc/image4.gif
+    doc/image4.gif \
+    doc/test5.c \
+    doc/project1.cpp
