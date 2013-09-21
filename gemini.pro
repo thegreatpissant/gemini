@@ -17,16 +17,23 @@ CONFIG += c++11
 SOURCES += main.cpp\
         gemini.cpp \
     cpu.cpp \
-    ipr.cpp \
-    memory.cpp
+    memory.cpp \
+    validator.cpp \
+    invalid_file_dialog.cpp \
+    gemini_parser.cpp
 
 
 HEADERS  += gemini.h \
     cpu.h \
-    ipr.h \
-    memory.h
+    memory.h \
+    validator.h \
+    invalid_file_dialog.h \
+    gemini_parser.h \
+    gemini_ops.h \
+    gemini_types.h
 
-FORMS    += gemini.ui
+FORMS    += gemini.ui \
+    invalid_file_dialog.ui
 
 OTHER_FILES += \
     README.md \

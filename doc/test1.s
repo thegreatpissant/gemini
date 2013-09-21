@@ -4,7 +4,7 @@ main:
   sta $255   ! 1 into Stack[255]
 
   add $0     ! 2 in ACC
-           
+
   lda $0
   sub $0     ! 0 in ACC
 
