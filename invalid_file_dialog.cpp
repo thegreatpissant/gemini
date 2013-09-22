@@ -26,7 +26,7 @@ void Invalid_file_dialog::set_error_list(Error_lines el)
     ui->textEdit->insertHtml("<b> Errors Found in file!! See <font color=red>RED</font> lines</b><br>");
 
     auto eline = el.begin();
-    for (auto line = 0; line < source_code.size(); line++ )
+    for (std::size_t line = 0; line < source_code.size(); line++ )
     {
         QString formated_line =
                 QString::number(line+1) + ":  " +

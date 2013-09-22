@@ -20,7 +20,9 @@ SOURCES += main.cpp\
     memory.cpp \
     validator.cpp \
     invalid_file_dialog.cpp \
-    gemini_parser.cpp
+    gemini_parser.cpp \
+    gemini_system.cpp \
+    clock.cpp
 
 
 HEADERS  += gemini.h \
@@ -29,8 +31,9 @@ HEADERS  += gemini.h \
     validator.h \
     invalid_file_dialog.h \
     gemini_parser.h \
-    gemini_ops.h \
-    gemini_types.h
+    gemini_types.h \
+    gemini_system.h \
+    clock.h
 
 FORMS    += gemini.ui \
     invalid_file_dialog.ui

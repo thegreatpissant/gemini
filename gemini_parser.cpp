@@ -5,8 +5,10 @@
 #include <stdexcept>
 
 namespace Gemini_parser {
+
 std::string line;
 Gemini_operand *op;
+
 void strip_comment ()
 {
     std::string t = line.substr(0, line.find_first_of ("!"));
@@ -64,10 +66,17 @@ bool get_value ( int& value )
 
 bool get_jump_label ( )
 {
+    op->access_type = Gemini_access_type::MEMORY;
     strip_whitespace ();
     if (line.find_first_not_of("abcdefghijklmnopqrstuvwxyz ") != std::string::npos)
         return false;
-    line = line.substr(0, line.find_first_not_of(" "));
+    auto e = line.find_first_of(" ");
+    op->label = line.substr(0, e);
+    if ( e == std::string::npos )
+        line.clear();
+    else
+        line = line.substr(e);
+
     return true;
 }
 
@@ -76,6 +85,7 @@ bool memory_access ( )
     strip_whitespace ();
     if ( line[0] == '$' )
     {
+        op->access_type = Gemini_access_type::MEMORY;
         line = line.substr(1);
         return get_value ( op->memory );
     }
@@ -86,6 +96,7 @@ bool value_access ( )
     strip_whitespace ();
     if ( line[0] == '#' && line[1] == '$')
     {
+        op->access_type = Gemini_access_type::VALUE;
         line = line.substr(2);
         return get_value ( op->value );
     }

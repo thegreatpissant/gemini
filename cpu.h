@@ -1,13 +1,17 @@
 #ifndef CPU_H
 #define CPU_H
 
-#include <string>
+#include "gemini_types.h"
 
 class CPU
 {
+private:
+    Byte_code byte_code;
+    //  registers
+
 public:
     CPU();
-    void load ( std::string source_file );
+    void load_byte_code ( Byte_code bc );
 };
 
 #endif // CPU_H

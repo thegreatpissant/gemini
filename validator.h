@@ -1,9 +1,9 @@
 #ifndef VALIDATOR_H
 #define VALIDATOR_H
 
-#include <vector>
-#include <string>
+#include <memory>
 #include "gemini_types.h"
-std::vector<std::size_t> validate_source (std::vector<std::string> source_file);
+
+Error_lines validate_source (Source_code source_file, std::shared_ptr<Byte_code> byte_code);
 
 #endif // VALIDATOR_H
