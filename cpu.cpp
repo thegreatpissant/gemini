@@ -6,11 +6,11 @@ CPU::CPU()
 
 void CPU::tick()
 {
-    if (IR >= (*byte_code).size())
+    if (PC >= (*byte_code).size())
     {
         return;
     }
-    instruction = (*byte_code)[IR];
+    instruction = (*byte_code)[PC];
 
     Value value;
 
@@ -39,6 +39,12 @@ void CPU::tick()
             value = instruction.value;
         }
         Acc += value;
+        if (Acc > 0)
+            CC = 1;
+        if (Acc == 0)
+            CC = 0;
+        if (Acc < 0)
+            CC = -1;
         break;
     case Gemini_op::SUB:
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -50,6 +56,12 @@ void CPU::tick()
             value = instruction.value;
         }
         Acc -= value;
+        if (Acc > 0)
+            CC = 1;
+        if (Acc == 0)
+            CC = 0;
+        if (Acc < 0)
+            CC = -1;
         break;
     case Gemini_op::AND:
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -61,6 +73,12 @@ void CPU::tick()
             value = instruction.value;
         }
         Acc &= value;
+        if (Acc > 0)
+            CC = 1;
+        if (Acc == 0)
+            CC = 0;
+        if (Acc < 0)
+            CC = -1;
         break;
     case Gemini_op::OR:
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -72,24 +90,36 @@ void CPU::tick()
             value = instruction.value;
         }
         Acc |= value;
+        if (Acc > 0)
+            CC = 1;
+        if (Acc == 0)
+            CC = 0;
+        if (Acc < 0)
+            CC = -1;
         break;
     case Gemini_op::NOTA:
         Acc = ~Acc;
+        if (Acc > 0)
+            CC = 1;
+        if (Acc == 0)
+            CC = 0;
+        if (Acc < 0)
+            CC = -1;
         break;
     case Gemini_op::BA:
-        IR = instruction.value;
+        PC = instruction.value;
         break;
     case Gemini_op::BE:
-        if ( Acc == 0 )
-            IR = instruction.value;
+        if ( CC == 0 )
+            PC = instruction.value;
         break;
     case Gemini_op::BL:
-        if ( Acc < 0 )
-            IR = instruction.value;
+        if ( CC < 0 )
+            PC = instruction.value;
         break;
     case Gemini_op::BG:
-        if ( Acc > 0 )
-            IR = instruction.value;
+        if ( CC > 0 )
+            PC = instruction.value;
         break;
     case Gemini_op::NOP:
         Acc += 0;
@@ -100,13 +130,13 @@ void CPU::tick()
         break;
     }
     if ( instruction.op != Gemini_op::BA && instruction.op != Gemini_op::BE && instruction.op != Gemini_op::BG && instruction.op != Gemini_op::BL )
-        IR++;
+        PC++;
 }
 
 void CPU::initialize()
 {
-    IR = instruction_index = 0;
-    instruction = (*byte_code)[IR];
+    PC = instruction_index = 0;
+    instruction = (*byte_code)[PC];
 }
 
 void CPU::load_byte_code(std::shared_ptr<Byte_code> bc)
