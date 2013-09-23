@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40 loose.dtd">
+<!-- saved from url=(0066)http://www.eecis.udel.edu/~morecraf/cisc360/Project2/project2.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>CISC 360—Computer Architecture</title>
+
+<link rel="stylesheet" href="./project2_files/reset.css" type="text/css">
+<link rel="stylesheet" href="./project2_files/main.css" type="text/css">
+
+
+<style type="text/css"></style></head>
+<body>
+
+<div id="main_wrapper">
+
+<div class="section top non-nav">
+
+
+<h1 class="header">CISC 360: Computer Architecture - Project 2</h1>
+<br style="clear:both;">
+
+    <h2><img src="./project2_files/image30.gif" width="351" height="88" align="bottom" naturalsizeflag="3"></h2>
+It is time to start adding features to the Gemini Simulator.  In this
+project you will add a L1 Cache to the design and compare some different cache
+designs.  You will be required to design two different kinds of caches and
+compare the performance of each.  After this, you will write a small paper to
+explain your findings.
+    
+
+<h3>Project Implementation</h3>
+
+<h2>Part 1 - Cache!</h2><br style="clear:both">
+
+<pre>  Your first goal will be to make sure you understand the differences between
+the possible types of caches.  Refer to <a href="http://www.cs.iastate.edu/~prabhu/Tutorial/CACHE/mem_title_2.html">Gurpur Prabhu's tutorials</a> on the 
+subject to see some applets that will demonstrate what you need to
+implement for the Gemini cache controller.  You will focus on:
+    - Direct Mapped (1-way Set Associative)
+    - 2-way Set Associative
+
+From the tutorial site, you will see that you need to concern yourself with
+code for:
+    - Block placement
+      This will be two cases you need to test between
+      1-way / 2-way set associative
+
+    - Block identification
+      You will need to implement a tag system to identify your blocks.
+      
+    - Block replacement
+      You will implement the Random replacement strategy (for ease of
+      implementation).
+      
+    - Interactions with Main Memory
+      Read Policy:
+        Hit: Simply reads the data from cache.
+        Miss: Use No Read Through to store data into the cache every time there
+              is a miss.
+      Write Policy:
+        Hit: Implement Write Back so that the cache will be marked as dirty and
+             only updated when needed.
+        Miss: Use No Write Allocate to keep the implementation simple.
+</pre>
+
+<h3>GUI Modifications</h3>
+
+<pre>You will need to add a field somewhere in the simulator GUI to show you if
+the operation resulted in a cache hit or miss.  You will also need a counter
+for the total number of cache hits and misses over the course of the programs
+life.  For debugging, you might want to consider using the built-in debugger
+to see how your algorithm is going.
+Another option is to add a log file to your program to see
+your progress.  The choice is yours, but the log file might be more useful in
+future projects with this...  Consider making a general purpose log class to
+make this happen.
+</pre>
+
+<h3>Class Modifications</h3>
+
+<pre>The way you implement this cache algorithm is entirely up to you.  I will
+give one suggestion to give you some ideas.  You should (of course) modify the
+Memory class to include the cache.  If you recall from the original project, we
+used an integer array to represent main memory (int Stack[256]).  You can
+adjust this to be a struct or class or whatever you feel is best.
+Your cache will need to be a struct or class array or some size much smaller
+than main memory.  (NOTE: Your cache WILL NOT need to handle the Instruction
+Vector (IV)).  Some suggestions to implement the cache- try and override the
+offset [] operator for your main memory to make use of the cache directly.  This would
+mean that Stack[x] would still work (from the main program in Project 1).
+Or create a Stack.at(x) function that will do all the cache work behind the
+scenes.  Your Memory class will need to include counters (or pointers into the
+Stack class's counters) so that your GUI can access the counters for display.
+</pre>
+
+<br><br>
+<h3>Testing</h3>
+
+<pre>  For the cache portion of testing, I am providing two sample .s files.
+  You will run these .s files through your simulator and you should see
+  some vast differences in how they run.  As part of the turn in, you are to
+  write a paragraph or so describing your findings.
+</pre>
+
+<a href="http://www.eecis.udel.edu/~morecraf/cisc360/Project2/project2_test1.s" target="_blank">Test 1</a><br>
+<a href="http://www.eecis.udel.edu/~morecraf/cisc360/Project2/project2_test2.s" target="_blank">Test 2</a><br>
+
+<br style="clear:both">
+<hr>
+<br style="clear:both">
+
+<h2>Part 2 - Instruction Formatting!</h2><br style="clear:both">
+
+Our Gemini Simulator currently has a serious issue in that it runs
+pure Gemini ASM code.  This makes it almost like a lisp machine, and we simply
+can't have that...  In this project you will have to make an architectural
+decision about *your* Gemini simulator!  At this point, each person in the
+class will determine thier own implementation for the simulator.  For this
+project, we will create a separate program to assemble the Gemini ASM into
+binary instructions for us.  Then we will modify the Gemini simulator to accept
+the binary files generated by the assembler and run the programs defined in
+them.
+
+<pre>The project data flow is listed here (NOTE: these values are simply examples):
+
+Gemini ASM file (something like test1.s):
+main:
+  lda #$1       
+  add #$1
+
+-- Processed by a new program you write called gasm:
+1010000000000001        =  lda #$1
+1100000000000001        =  add #$1
+
+-- Binary stored into g.out
+
+./Gemini g.out
+-- New Gemini will read binary files and parse them.
+</pre>
+
+<pre>Using your knowledge of the different types of ISA's available, you will
+determine what type of machine you wish to create.  In general, you may create
+a RISC, CISC or a more modern combination of the two out of the Gemini
+architecture.  This means that the first thing you need to do is seriously
+evaluate the pros and cons for each ISA.  At this point, you may find it
+nessecary to change the original Gemini Instruction Set from Project 1 into
+something that will work for you.  This is certainly allowed, as long as your
+machine can handle the following operations:
+(Most of this is as expected.  NEW Instructions you will need to add have a * next
+to them)
+
+  - Addition
+  - Subtraction
+  - Logical And
+  - Logical Or
+  - Logical Not
+  - Load/Store (You may chose to stay with the Accumulator design, but you are
+    allowed to add more registers (up to 4 General Purpose, and any number of
+    extra registers))
+  - Branching instructions (note that RISC machines will not require a delay
+    slot yet- as we have not implemented pipelining!)
+    - BA, BE,BL, BG 
+    - *BGE, *BLE, *BNE
+  - Multiplication (*MUL)
+  - Division (*DIV)
+  - Subroutines (*JMP, *RET)
+
+Your binary instructions can be formatted any way you choose.  No matter what
+implementation you choose, you may find the need to add more instructions than
+the ones listed above.
+</pre>
+
+<h3>Implementation Choice</h3>
+<pre>The goal here is to have the whole class come up with a few different
+implementation decisions.  This way, the final project and presentation will be
+very interesting and most beneficial for everyone.
+I will tell you right now that the final project has to do with adding a 
+pipeline or dual core to this machine.  I will wait until the project is assigned to tell
+you what exactly I would like to see, but you will be adding to this project
+one last time.  What this means is that your decision here will impact your
+next project as well.  Here is the general view of what that means based on
+your decision:
+
+  - RISC: Will be harder to implement on this project as the assembler will be
+    more complex and you may find the need for additional instructions.
+    However, as we saw in the SPARC machine, pipelining will be easier than
+    with a CISC machine (but not much).
+
+  - CISC: Will be eaiser to implement on this project since our instruction
+    format can be anything we want.  However, pipeling this will be far from
+    simple making the next project more difficult.
+
+  - Combo: Will be slightly more difficult to implement on this project, but
+    slightly eaiser than pure CISC on the next project.
+
+As you can see, none of them are going to get you out of any implementation
+difficulty, so its really just a matter of picking one and sticking with it!
+</pre>
+
+<h3>GUI Modifications</h3>
+<pre>We will only need to add one element to the GUI for this program- just show the
+instruction in hex, as well as what the simulator thinks the binary means.
+This means that the IR will now be set to the actual binary value, not the
+address of that value anymore!  The Instruction: [] should still hold the
+'Gamini ASM' text of what this instruction is trying to do.
+
+<h3>Class Modifications</h3>
+
+<pre>You will need to pull code out of your Project 1 (namely the Instruction Parser
+Engine (IPE)) to allow your assembler to read Gemini ASM.  The assembler simply
+then writes a new file (consider command line options and defaults similar to
+what gcc does) with the binary format you decide on.  Once the file is written
+out, it will look like simple data (just a bunch of bits).  The assembler is a
+stand-alone application that you will run once- think of it as the gas program
+that can take pure assembly and convert it into binary.
+
+If you choose RISC, it will be easy to read the file since you just
+need to read one word (short int) at a time.
+
+CISC will need an instruction length header in front of each instruction.
+
+Mix will just need to be like CISC with a very defined Instruction Word format
+(to be able to split it up into manageable chunks).
+
+You then need to modify the Gemini Simulator to read the binary file you just
+created instead of pure strings.  You can still use the Instruction Vector (IV)
+to store each instruction if you would like- you should change the data type
+from strings to something more suitable for your implementation (a short int
+for RISC, keep a string for CISC?).
+
+As the program runs, you should decode each instruction into what it really
+means.  Show both the instruction and the decode decision in the GUI.
+
+The next step will be adding the new instructions into your implmentation.
+Here are some guidelines:
+
+ MUL / DIV:  You will need to add another register (AccD) to hold the upper
+bits result of a MUL or a DIV.
+
+ JMP / RET:  You will need to add another register to hold the return address
+(label/line number really) so when a subroutine finishes, it will go back to
+where it came from.  So, they can be treated as a BA with a special register
+for RET.
+
+ RISC:
+  - Branching/Jumping does not require a delay slot!  (We have not pipelined yet)
+  - Load/Store does not require any delay stalls either.
+  - Retain the ability to move larger values into your Acc!
+    lda #$1048576
+    No way that will fit in your instruction word, yet it will fit into a register!
+    Do what SPARC did here and add a 'set' instruction.
+  - MUL and DIV will finish in one cycle in this project, but not project 4.
+
+ CISC:
+  - Think about the fact that the instruction can vary in length.  If you can
+    implement this successfully, the rest of your code will be much simpler.
+
+Everyone should see page 402 and on to the end of the chapter for some nice
+ideas on getting started with instruction formatting!
+
+<h3>Testing</h3>
+
+In addition to the previous .s files,
+you will need to run the following code sample through the Gemini simulator.
+(You need to manually convert the C code to your Gemini ASM first).
+Show the assembler running through the assembly, then show a hexdump of the binary
+file the assembler created (run with hexdump <filename>).  Finally, show a
+screen shot of the GUI after it has run the binary code.
+
+Code Samples:
+
+Test 1 - Test basic operation
+
+int main(void){
+  int x = 0;
+  int g = 0x0, h = 0x37, j = 0xad, k = 0xff, l = 0xffff;
+  int y = 10;
+  for(int i = 0; i &lt; y; i++){
+    x += y * i;
+    g = h &amp; j &amp; i | k;
+    g = !g;
+  }
+  if(x &amp; 0x02ab00 &gt; y){
+    x = 0;
+  }
+}
+
+<h3>Turn In</h3>
+
+<pre>You will need to turn in the following:
+   - Entire Solution (Cleaned of bin/obj)
+   - Baseline Gemini ASM code that you might have created.
+   - Screen shots of the simulator running both types of cache.
+   - Small (less than one page) paper describing your results for Part 1 - Cache.
+</pre>
+
+</filename></pre></pre></div></div>
+
+
+</body></html>

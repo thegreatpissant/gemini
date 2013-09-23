@@ -22,7 +22,8 @@ SOURCES += main.cpp\
     invalid_file_dialog.cpp \
     gemini_parser.cpp \
     gemini_system.cpp \
-    clock.cpp
+    clock.cpp \
+    gemini_types.cpp
 
 
 HEADERS  += gemini.h \
@@ -57,4 +58,5 @@ OTHER_FILES += \
     doc/image6.gif \
     doc/image4.gif \
     doc/test5.c \
-    doc/project1.cpp
+    doc/project1.cpp \
+    doc/project2.html

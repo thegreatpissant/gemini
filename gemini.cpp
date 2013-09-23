@@ -5,6 +5,7 @@
 #include "gemini.h"
 #include "ui_gemini.h"
 #include "gemini_types.h"
+#include "gemini_system.h"
 #include "validator.h"
 #include "invalid_file_dialog.h"
 
@@ -14,7 +15,7 @@
 #include <QTextStream>
 #include <QString>
 
-#include <memory>
+extern Gemini_system gemini_system;
 
 gemini::gemini(QWidget *parent) :
     QMainWindow(parent),
@@ -26,6 +27,29 @@ gemini::gemini(QWidget *parent) :
 gemini::~gemini()
 {
     delete ui;
+}
+
+void gemini::gemini_display_callback()
+{
+    Gemini_system_info gemini_system_info = gemini_system.get_system_info();
+    //  Set all the registers
+   ui->reg_A    ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.A)));
+   ui->reg_B    ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.B)));
+   ui->reg_Acc  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.Acc )));
+   ui->reg_Zero ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.Zero )));
+   ui->reg_One  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.One )));
+   ui->reg_PC   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.PC )));
+   ui->reg_MAR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MAR )));
+   ui->reg_MDR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MDR )));
+   ui->reg_TEMP ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.TEMP )));
+   ui->reg_IR   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.IR )));
+   ui->reg_CC   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CC )));
+
+    //  Set the Instruction
+    ui->inst_label_value ->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
+
+    //  Set the Instruction index
+   ui->inst_label_index ->setText( QString::fromStdString(gemini_register_value_to_std_string(gemini_system_info.instruction_index)));
 }
 
 void gemini::on_actionQuit_triggered()
@@ -75,15 +99,16 @@ void gemini::on_actionLoad_triggered()
     //  Linker
 
     //  insert a branch always to the location of main as the first instruction
-    Gemini_operand op;
-    op.operand = Gemini_op::BA;
-    op.label = "main";
-    byte_code->insert(byte_code->begin(), op);
+    Gemini_operand operand;
+    operand.op = Gemini_op::BA;
+    operand.label = "main";
+    operand.access_type = Gemini_access_type::VALUE;
+    byte_code->insert(byte_code->begin(), operand);
 
     std::map<Label, int> label_table;
     for ( std::size_t i = 0; i < byte_code->size(); i++)
     {
-        if ((*byte_code)[i].operand == Gemini_op::LABLE)
+        if ((*byte_code)[i].op == Gemini_op::LABEL)
         {
             label_table[(*byte_code)[i].label] = i;
             byte_code->erase(byte_code->begin() + i);
@@ -101,25 +126,36 @@ void gemini::on_actionLoad_triggered()
     //  Link the labels to the bytecode
     for (auto &bc : *byte_code)
     {
-        if (bc.operand == Gemini_op::BA || bc.operand == Gemini_op::BE || bc.operand == Gemini_op::BG || bc.operand == Gemini_op::BL)
+        if (bc.op == Gemini_op::BA || bc.op == Gemini_op::BE || bc.op == Gemini_op::BG || bc.op == Gemini_op::BL)
         {
             //  TODO: Generate a warning dialog for unknown label lookup.
-            bc.memory = label_table[bc.label];
-            bc.label.clear();
+            if (label_table.find(bc.label) == label_table.end())
+            {
+                QMessageBox *mb = new QMessageBox(this);
+                mb->setText("linking failed. label " + QString::fromStdString(bc.label) + " not found.");
+                mb->show();
+            }
+            else {
+                bc.value = label_table[bc.label];
+                bc.label.clear();
+            }
         }
     }
 
     //  Send Byte_code to gemini system
+    gemini_system.load_byte_code(byte_code);
 
     //  Set CPU to ready
+    gemini_system.power_on();
 
     //  Enable the 'next' button
     ui->pushButton->setEnabled(true);
 
+    this->gemini_display_callback();
 }
 
 void gemini::on_pushButton_clicked()
 {
-    
-
+    gemini_system.cycle_clock();
+    this->gemini_display_callback();
 }

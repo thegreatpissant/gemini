@@ -4,10 +4,12 @@
 #include <string>
 #include <stdexcept>
 
+//  TODO: detect incorrect memory/value usage per operation
+
 namespace Gemini_parser {
 
 std::string line;
-Gemini_operand *op;
+Gemini_operand *operand;
 
 void strip_comment ()
 {
@@ -34,7 +36,7 @@ void strip_whitespace ( )
     line = line.substr(beg);
 }
 
-bool get_value ( int& value )
+bool get_value ( Register_value &value )
 {
     value = -1;
 //    std::string val = line.substr(0,line.find_first_not_of(" "));
@@ -66,12 +68,12 @@ bool get_value ( int& value )
 
 bool get_jump_label ( )
 {
-    op->access_type = Gemini_access_type::MEMORY;
+    operand->access_type = Gemini_access_type::MEMORY;
     strip_whitespace ();
     if (line.find_first_not_of("abcdefghijklmnopqrstuvwxyz ") != std::string::npos)
         return false;
     auto e = line.find_first_of(" ");
-    op->label = line.substr(0, e);
+    operand->label = line.substr(0, e);
     if ( e == std::string::npos )
         line.clear();
     else
@@ -85,9 +87,9 @@ bool memory_access ( )
     strip_whitespace ();
     if ( line[0] == '$' )
     {
-        op->access_type = Gemini_access_type::MEMORY;
+        operand->access_type = Gemini_access_type::MEMORY;
         line = line.substr(1);
-        return get_value ( op->memory );
+        return get_value ( operand->memory );
     }
     return false;
 }
@@ -96,9 +98,9 @@ bool value_access ( )
     strip_whitespace ();
     if ( line[0] == '#' && line[1] == '$')
     {
-        op->access_type = Gemini_access_type::VALUE;
+        operand->access_type = Gemini_access_type::VALUE;
         line = line.substr(2);
-        return get_value ( op->value );
+        return get_value ( operand->value );
     }
     return false;
 }
@@ -115,60 +117,60 @@ void get_opcode ( )
 
     if (opcode == "lda")
     {
-        op->operand = Gemini_op::LDA;
+        operand->op = Gemini_op::LDA;
     }
     else if (opcode == "sta")
     {
-        op->operand = Gemini_op::STA;
+        operand->op = Gemini_op::STA;
     }
     else if (opcode == "add")
     {
-        op->operand = Gemini_op::ADD;
+        operand->op = Gemini_op::ADD;
     }
     else if (opcode == "sub")
     {
-        op->operand = Gemini_op::SUB;
+        operand->op = Gemini_op::SUB;
     }
     else if (opcode == "and")
     {
-        op->operand = Gemini_op::AND;
+        operand->op = Gemini_op::AND;
     }
     else if (opcode == "or")
     {
-        op->operand = Gemini_op::OR;
+        operand->op = Gemini_op::OR;
     }
     else if (opcode == "nota")
     {
-        op->operand = Gemini_op::NOTA;
+        operand->op = Gemini_op::NOTA;
     }
     else if (opcode == "ba")
     {
-        op->operand = Gemini_op::BA;
+        operand->op = Gemini_op::BA;
     }
     else if (opcode == "be")
     {
-        op->operand = Gemini_op::BE;
+        operand->op = Gemini_op::BE;
     }
     else if (opcode == "bl")
     {
-        op->operand = Gemini_op::BL;
+        operand->op = Gemini_op::BL;
     }
     else if (opcode == "bg")
     {
-        op->operand = Gemini_op::BG;
+        operand->op = Gemini_op::BG;
     }
     else if (opcode == "nop")
     {
-        op->operand = Gemini_op::NOP;
+        operand->op = Gemini_op::NOP;
     }
     else if (line[idx_inst_beg + idx_op_end] == ':')
     {
-        op->operand = Gemini_op::LABLE;
-        op->label = opcode;
+        operand->op = Gemini_op::LABEL;
+        operand->label = opcode;
     }
     else if (line[idx_inst_beg + idx_op_end] != ':')
     {
-        op->operand = Gemini_op::INVALID;
+        operand->op = Gemini_op::INVALID;
         return;
     }
 
@@ -182,24 +184,24 @@ void parse_opcode ()
 {
     if ( is_empty_line() )
     {
-        op->operand = Gemini_op::EMPTY;
+        operand->op = Gemini_op::EMPTY;
         return;
     }
 
     get_opcode ();
 
-    if (op->operand == Gemini_op::INVALID)
+    if (operand->op == Gemini_op::INVALID)
         return;
 
-    if (op->operand == Gemini_op::LABLE)
+    if (operand->op == Gemini_op::LABEL)
         return;
 
-    if ( (op->operand == Gemini_op::NOP || op->operand == Gemini_op::NOTA)
+    if ( (operand->op == Gemini_op::NOP || operand->op == Gemini_op::NOTA)
          && is_empty_line () )
         return;
 
-    if (op->operand == Gemini_op::BA || op->operand == Gemini_op::BE
-            || op->operand == Gemini_op::BG || op->operand == Gemini_op::BL)
+    if ( operand->op == Gemini_op::BA || operand->op == Gemini_op::BE ||
+         operand->op == Gemini_op::BG || operand->op == Gemini_op::BL)
     {
         if ( get_jump_label () && is_empty_line () )
             return;
@@ -209,21 +211,21 @@ void parse_opcode ()
     else if ( value_access () && is_empty_line () )
         return;
 
-    op->operand = Gemini_op::INVALID;
+    operand->op = Gemini_op::INVALID;
     return;
 }
 
 Gemini_operand * parse_instruction ( const std::string l)
 {
     line = l;
-    op = new Gemini_operand ();
+    operand = new Gemini_operand ();
 
     strip_comment () ;
     strip_whitespace ();
 
     parse_opcode ();
 
-    return op;
+    return operand;
 }
 
 

@@ -7,6 +7,8 @@
 #define GEMINI_H
 
 #include <QMainWindow>
+#include "gemini_types.h"
+#include "gemini_system.h"
 
 namespace Ui {
 class gemini;
@@ -19,6 +21,7 @@ class gemini : public QMainWindow
 public:
     explicit gemini(QWidget *parent = 0);
     ~gemini();
+    void gemini_display_callback ();
 
 private slots:
     void on_actionQuit_triggered();
