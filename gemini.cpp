@@ -1,7 +1,18 @@
 /*
- *  James Feister
- *  cisc360 Gemini project
+ * James A. Feister jfeister@udel.edu, openjaf@gmail.com
+ * Project located at www.github.com/thegreatpissant/gemini.git
+ * Class: CISC 360 - Computer Architecture
+ * Instructor: Seth Morecraft
+ * Web: http://www.cis.udel.edu/~morecraf/cisc360/
+ *
+ * Project 1: Gemini architecture, Implement the following
+ * - GUI: Showing registers and instruction
+ * - Parsing of program for syntax errors: Alert user of failure
+ * - Running of program instructions, non bytecode translation
+ * - Detection of memory access errors, Alert user of failure
+ * - This is the base of the project.
  */
+
 #include "gemini.h"
 #include "ui_gemini.h"
 #include "gemini_types.h"
@@ -42,11 +53,13 @@ void gemini::gemini_display_callback()
    ui->reg_MAR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MAR )));
    ui->reg_MDR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MDR )));
    ui->reg_TEMP ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.TEMP )));
-   ui->reg_IR   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.IR )));
+//   ui->reg_IR   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.IR )));
    ui->reg_CC   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CC )));
 
     //  Set the Instruction
     ui->inst_label_value ->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
+    //  TODO: dont forget to change this later for the bytecode, These are the same for now
+    ui->reg_IR->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
 
     //  Set the Instruction index
    ui->inst_label_index ->setText( QString::fromStdString(gemini_register_value_to_std_string(gemini_system_info.instruction_index)));
@@ -156,6 +169,21 @@ void gemini::on_actionLoad_triggered()
 
 void gemini::on_pushButton_clicked()
 {
-    gemini_system.cycle_clock();
-    this->gemini_display_callback();
+    try {
+        gemini_system.cycle_clock();
+        this->gemini_display_callback();
+    }
+    catch (std::out_of_range excp) {
+        QMessageBox *mb = new QMessageBox(this);
+        mb->setText(QString::fromStdString(excp.what()));
+        mb->show();
+        this->gemini_display_callback();
+        set_cpu_error ();
+        gemini_system.power_off();
+    }
+}
+
+void gemini::set_cpu_error ()
+{
+    ui->pushButton->setEnabled(false);
 }

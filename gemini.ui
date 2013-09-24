@@ -153,7 +153,7 @@
      <rect>
       <x>10</x>
       <y>138</y>
-      <width>168</width>
+      <width>261</width>
       <height>287</height>
      </rect>
     </property>
@@ -446,12 +446,18 @@
              <property name="text">
               <string/>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="reg_B">
              <property name="text">
               <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
             </widget>
            </item>
@@ -460,12 +466,18 @@
              <property name="text">
               <string/>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="reg_Zero">
              <property name="text">
               <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
             </widget>
            </item>
@@ -474,12 +486,18 @@
              <property name="text">
               <string/>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="reg_PC">
              <property name="text">
               <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
             </widget>
            </item>
@@ -488,12 +506,18 @@
              <property name="text">
               <string/>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="reg_MDR">
              <property name="text">
               <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
             </widget>
            </item>
@@ -502,6 +526,9 @@
              <property name="text">
               <string/>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
             </widget>
            </item>
            <item>
@@ -509,12 +536,18 @@
              <property name="text">
               <string/>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QLabel" name="reg_CC">
              <property name="text">
               <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
              </property>
             </widget>
            </item>
@@ -612,7 +645,7 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>331</width>
+      <width>261</width>
       <height>46</height>
      </rect>
     </property>
@@ -640,7 +673,7 @@
        <item>
         <widget class="QLabel" name="inst_label_index">
          <property name="text">
-          <string>TextLabel</string>
+          <string/>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -665,7 +698,7 @@
             <number>0</number>
            </property>
            <property name="text">
-            <string>TextLabel</string>
+            <string/>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
@@ -685,6 +718,11 @@
      </item>
     </layout>
    </widget>
+   <zorder>verticalLayoutWidget</zorder>
+   <zorder>pushButton</zorder>
+   <zorder>horizontalLayoutWidget_3</zorder>
+   <zorder>horizontalLayoutWidget_5</zorder>
+   <zorder>reg_TEMP</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -693,12 +731,12 @@
      <x>0</x>
      <y>0</y>
      <width>662</width>
-     <height>23</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>&amp;File</string>
     </property>
     <addaction name="actionLoad"/>
     <addaction name="actionQuit"/>
@@ -707,12 +745,12 @@
   </widget>
   <action name="actionLoad">
    <property name="text">
-    <string>Load</string>
+    <string>&amp;Load</string>
    </property>
   </action>
   <action name="actionQuit">
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
    <property name="shortcut">
     <string>Esc</string>

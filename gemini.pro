@@ -22,7 +22,6 @@ SOURCES += main.cpp\
     invalid_file_dialog.cpp \
     gemini_parser.cpp \
     gemini_system.cpp \
-    clock.cpp \
     gemini_types.cpp
 
 
@@ -33,8 +32,7 @@ HEADERS  += gemini.h \
     invalid_file_dialog.h \
     gemini_parser.h \
     gemini_types.h \
-    gemini_system.h \
-    clock.h
+    gemini_system.h
 
 FORMS    += gemini.ui \
     invalid_file_dialog.ui

@@ -1,3 +1,18 @@
+/*
+ * James A. Feister jfeister@udel.edu, openjaf@gmail.com
+ * Project located at www.github.com/thegreatpissant/gemini.git
+ * Class: CISC 360 - Computer Architecture
+ * Instructor: Seth Morecraft
+ * Web: http://www.cis.udel.edu/~morecraf/cisc360/
+ *
+ * Project 1: Gemini architecture, Implement the following
+ * - GUI: Showing registers and instruction
+ * - Parsing of program for syntax errors: Alert user of failure
+ * - Running of program instructions, non bytecode translation
+ * - Detection of memory access errors, Alert user of failure
+ * - This is the base of the project.
+ */
+
 #include "cpu.h"
 
 CPU::CPU()
@@ -5,6 +20,13 @@ CPU::CPU()
 }
 
 void CPU::tick()
+{
+    memory->tick ();
+    //  cpu clock
+    execute_instruction ();
+}
+
+void CPU::execute_instruction ()
 {
     if (PC >= (*byte_code).size())
     {
@@ -18,7 +40,7 @@ void CPU::tick()
     case Gemini_op::LDA :
         if (instruction.access_type == Gemini_access_type::MEMORY)
         {
-            value = memory->get_memory(instruction.value);
+            value = memory->get_memory(instruction.memory);
         }
         else if (instruction.access_type == Gemini_access_type::VALUE)
         {
@@ -27,12 +49,12 @@ void CPU::tick()
         Acc = value;
         break;
     case Gemini_op::STA :
-        memory->set_memory(instruction.value, Acc);
+        memory->set_memory(instruction.memory, Acc);
         break;
     case Gemini_op::ADD :
         if (instruction.access_type == Gemini_access_type::MEMORY)
         {
-            value = memory->get_memory(instruction.value);
+            value = memory->get_memory(instruction.memory);
         }
         else if (instruction.access_type == Gemini_access_type::VALUE)
         {
@@ -49,7 +71,7 @@ void CPU::tick()
     case Gemini_op::SUB:
         if (instruction.access_type == Gemini_access_type::MEMORY)
         {
-            value = memory->get_memory(instruction.value);
+            value = memory->get_memory(instruction.memory);
         }
         else if (instruction.access_type == Gemini_access_type::VALUE)
         {
@@ -66,7 +88,7 @@ void CPU::tick()
     case Gemini_op::AND:
         if (instruction.access_type == Gemini_access_type::MEMORY)
         {
-            value = memory->get_memory(instruction.value);
+            value = memory->get_memory(instruction.memory);
         }
         else if (instruction.access_type == Gemini_access_type::VALUE)
         {
@@ -83,7 +105,7 @@ void CPU::tick()
     case Gemini_op::OR:
         if (instruction.access_type == Gemini_access_type::MEMORY)
         {
-            value = memory->get_memory(instruction.value);
+            value = memory->get_memory(instruction.memory);
         }
         else if (instruction.access_type == Gemini_access_type::VALUE)
         {
@@ -137,6 +159,11 @@ void CPU::initialize()
 {
     PC = instruction_index = 0;
     instruction = (*byte_code)[PC];
+}
+
+void CPU::stop ()
+{
+    PC = byte_code->size ();
 }
 
 void CPU::load_byte_code(std::shared_ptr<Byte_code> bc)

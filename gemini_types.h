@@ -1,3 +1,18 @@
+/*
+ * James A. Feister jfeister@udel.edu, openjaf@gmail.com
+ * Project located at www.github.com/thegreatpissant/gemini.git
+ * Class: CISC 360 - Computer Architecture
+ * Instructor: Seth Morecraft
+ * Web: http://www.cis.udel.edu/~morecraf/cisc360/
+ *
+ * Project 1: Gemini architecture, Implement the following
+ * - GUI: Showing registers and instruction
+ * - Parsing of program for syntax errors: Alert user of failure
+ * - Running of program instructions, non bytecode translation
+ * - Detection of memory access errors, Alert user of failure
+ * - This is the base of the project.
+ */
+
 #ifndef GEMINI_TYPES_H
 #define GEMINI_TYPES_H
 
@@ -75,7 +90,8 @@ struct Gemini_system_info {
     Memory_loc MAR;
     Memory_loc MDR;
     Memory_loc TEMP;
-    Memory_loc IR;
+    Gemini_operand IR;
+//    Memory_loc IR;
     Memory_loc CC;
 
     Gemini_operand instruction;
