@@ -35,7 +35,7 @@ std::string gemini_register_value_to_std_string (Register_value memory)
 {
     std::stringstream s;
     s << "0x" <<  std::setfill ('0') << std::setw(sizeof(Register_value)*2) <<
-         std::hex << memory;
+         memory;
 //    return std::to_string(memory);
     return s.str();
 }

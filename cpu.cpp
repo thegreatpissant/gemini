@@ -47,9 +47,11 @@ void CPU::execute_instruction ()
             value = instruction.value;
         }
         Acc = value;
+        PC++;
         break;
     case Gemini_op::STA :
         memory->set_memory(instruction.memory, Acc);
+        PC++;
         break;
     case Gemini_op::ADD :
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -67,6 +69,7 @@ void CPU::execute_instruction ()
             CC = 0;
         if (Acc < 0)
             CC = -1;
+        PC++;
         break;
     case Gemini_op::SUB:
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -84,6 +87,7 @@ void CPU::execute_instruction ()
             CC = 0;
         if (Acc < 0)
             CC = -1;
+        PC++;
         break;
     case Gemini_op::AND:
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -101,6 +105,7 @@ void CPU::execute_instruction ()
             CC = 0;
         if (Acc < 0)
             CC = -1;
+        PC++;
         break;
     case Gemini_op::OR:
         if (instruction.access_type == Gemini_access_type::MEMORY)
@@ -118,6 +123,7 @@ void CPU::execute_instruction ()
             CC = 0;
         if (Acc < 0)
             CC = -1;
+        PC++;
         break;
     case Gemini_op::NOTA:
         Acc = ~Acc;
@@ -127,6 +133,7 @@ void CPU::execute_instruction ()
             CC = 0;
         if (Acc < 0)
             CC = -1;
+        PC++;
         break;
     case Gemini_op::BA:
         PC = instruction.value;
@@ -134,25 +141,30 @@ void CPU::execute_instruction ()
     case Gemini_op::BE:
         if ( CC == 0 )
             PC = instruction.value;
+        else
+            PC++;
         break;
     case Gemini_op::BL:
         if ( CC < 0 )
             PC = instruction.value;
+        else
+            PC ++;
         break;
     case Gemini_op::BG:
         if ( CC > 0 )
             PC = instruction.value;
+        else
+            PC ++;
         break;
     case Gemini_op::NOP:
         Acc += 0;
+        PC++;
         break;
     case Gemini_op::LABEL:
     case Gemini_op::EMPTY:
     case Gemini_op::INVALID:
         break;
     }
-    if ( instruction.op != Gemini_op::BA && instruction.op != Gemini_op::BE && instruction.op != Gemini_op::BG && instruction.op != Gemini_op::BL )
-        PC++;
 }
 
 void CPU::initialize()

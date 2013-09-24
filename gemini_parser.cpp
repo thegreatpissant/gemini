@@ -83,9 +83,9 @@ bool get_value ( Register_value &value )
 
 bool get_jump_label ( )
 {
-    operand->access_type = Gemini_access_type::MEMORY;
+    operand->access_type = Gemini_access_type::VALUE;
     strip_whitespace ();
-    if (line.find_first_not_of("abcdefghijklmnopqrstuvwxyz ") != std::string::npos)
+    if (line.find_first_not_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos)
         return false;
     auto e = line.find_first_of(" ");
     operand->label = line.substr(0, e);
@@ -211,8 +211,7 @@ void parse_opcode ()
     if (operand->op == Gemini_op::LABEL)
         return;
 
-    if ( (operand->op == Gemini_op::NOP || operand->op == Gemini_op::NOTA)
-         && is_empty_line () )
+    if ( (operand->op == Gemini_op::NOP || operand->op == Gemini_op::NOTA) && is_empty_line () )
         return;
 
     if ( operand->op == Gemini_op::BA || operand->op == Gemini_op::BE ||
