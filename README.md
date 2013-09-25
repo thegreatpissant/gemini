@@ -13,6 +13,7 @@ Project 1: Gemini architecture, Implement the following
  - Running of program instructions, non bytecode translation
  - Detection of memory access errors, Alert user of failure
  - This is the base of the project.
- - RELEASE
+ - Project1 writeup is located at "./doc/jfeister-Project1-writeup.pdf"
+ - Test Gemini assembly files are in "./doc" and "./gemini_asm_files"
 
 Project 2: ...
