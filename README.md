@@ -13,6 +13,6 @@ Project 1: Gemini architecture, Implement the following
  - Running of program instructions, non bytecode translation
  - Detection of memory access errors, Alert user of failure
  - This is the base of the project.
- - RELEASE
+ - RELEASE writeup is located at ./doc/jfeister-Project1-writeup.pdf
 
 Project 2: ...
