@@ -12,6 +12,9 @@
  * - Detection of memory access errors, Alert user of failure
  * - This is the base of the project.
  */
+/*
+ *  Gemini system : Handles all items in a gemini system: CPU, MEMORY, BUS, IO
+ */
 
 #include "gemini_system.h"
 
@@ -19,6 +22,8 @@ Gemini_system::Gemini_system()
 {
 }
 
+//  Turn it on 
+//  TODO: integrate this and its complement into a switch on the front?
 void Gemini_system::power_on()
 {
     power = true;
@@ -29,30 +34,36 @@ void Gemini_system::power_on()
     cpu.tick();
 }
 
+//  Turn it off
 void Gemini_system::power_off ()
 {
     cpu.stop ();
     power = false;
 }
 
+//  Send bytecode into the system
 void Gemini_system::load_byte_code(std::shared_ptr<Byte_code> b_c)
 {
     byte_code = b_c;
 }
 
+//  External notification to cycle the clock
 void Gemini_system::cycle_clock()
 {
     if (power)
         tick ();
 }
 
+//  A would be function pointer to the current ticking component
 void Gemini_system::tick ()
 {
     cpu.tick ();
 }
 
+//  Retrive some information about the system, for now it is the CPU registers
 Gemini_system_info Gemini_system::get_system_info()
 {
+    //  Populate the gemini system information struct
     Gemini_system_info tmp;
     tmp.A = cpu.A;
     tmp.B = cpu.B;

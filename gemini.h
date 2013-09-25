@@ -13,12 +13,20 @@
  * - This is the base of the project.
  */
 
+/*
+ *  Gemini application gui
+ *
+ *  Handles all events related to the gui and code.
+ *  Some parts may require a better seperation in the MVC sense
+ */
+
 #ifndef GEMINI_H
 #define GEMINI_H
 
-#include <QMainWindow>
 #include "gemini_types.h"
 #include "gemini_system.h"
+
+#include <QMainWindow>
 
 namespace Ui {
 class gemini;
@@ -36,10 +44,13 @@ public:
     void set_cpu_error();
 
 private slots:
+    //  Terminate the application
     void on_actionQuit_triggered();
 
+  //  Loading a gemini asm file
     void on_actionLoad_triggered();
 
+  //  Handles the user initializing a clock cycle
     void on_pushButton_clicked();
 
 private:

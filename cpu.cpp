@@ -13,6 +13,12 @@
  * - This is the base of the project.
  */
 
+
+/*
+ *  Gemini system CPU: Performs operations and generates clock signals.
+ *
+ */
+
 #include "cpu.h"
 
 CPU::CPU()
@@ -169,6 +175,9 @@ void CPU::execute_instruction ()
 
 void CPU::initialize()
 {
+  
+    Zero = 0;
+    One = 1;
     PC = instruction_index = 0;
     instruction = (*byte_code)[PC];
 }

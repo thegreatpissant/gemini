@@ -13,12 +13,19 @@
  * - This is the base of the project.
  */
 
+/*
+ * main entry point of the application
+ */
+
 #include "gemini.h"
 #include "gemini_system.h"
+
 #include <QApplication>
 
+//  What is the gemini_system!
 Gemini_system gemini_system;
 
+//  
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);

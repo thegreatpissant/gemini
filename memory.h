@@ -19,16 +19,22 @@
 #include <vector>
 #include "gemini_types.h"
 
+/*
+ * gemini memory: will handle the memory request of the CPU, in cache and system forms
+ */
 class Memory
 {
 private:
+  //  Gemini system main memory
     std::vector <Register_value> main_memory;
 
 public:
     Memory();
+    // Post and Request functions for main memory.
     Register_value get_memory (Memory_loc memory_loc);
     void set_memory(Memory_loc memory_loc, Register_value value);
-    void tick();
+
+    void tick();  // Not used yet
 };
 
 #endif // MEMORY_H

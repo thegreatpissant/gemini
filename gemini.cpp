@@ -20,6 +20,8 @@
 #include "validator.h"
 #include "invalid_file_dialog.h"
 
+#include <stdexcept>
+
 #include <QFileDialog>
 #include <QFile>
 #include <QMessageBox>
@@ -40,6 +42,11 @@ gemini::~gemini()
     delete ui;
 }
 
+/*
+ * Grabs the cpu registers from the gemini system
+ * Converts them into human readable form
+ * Sets the GUI lables appropriatly for coresponding register
+ */
 void gemini::gemini_display_callback()
 {
     Gemini_system_info gemini_system_info = gemini_system.get_system_info();
@@ -53,23 +60,37 @@ void gemini::gemini_display_callback()
    ui->reg_MAR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MAR )));
    ui->reg_MDR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MDR )));
    ui->reg_TEMP ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.TEMP )));
-//   ui->reg_IR   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.IR )));
+// Will change back when using bytecode
+// ui->reg_IR   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.IR )));
    ui->reg_CC   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CC )));
 
-    //  Set the Instruction
+    //  Set the Instruction label
     ui->inst_label_value ->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
     //  TODO: dont forget to change this later for the bytecode, These are the same for now
     ui->reg_IR->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
 
-    //  Set the Instruction index
+    //  Set the Instruction index label
    ui->inst_label_index ->setText( QString::fromStdString(gemini_register_value_to_std_string(gemini_system_info.instruction_index)));
 }
 
+
+/*
+ * Close the application
+ */
 void gemini::on_actionQuit_triggered()
 {
     qApp->quit();
 }
 
+/*
+ * Load a gemini '.s' asm file
+ * Recieve the validated line as a intermediary bytecode representation
+ * If any errors found show a multiline listing of the asm file with highlighted lines of found errors.
+ * Perform a small "Linking" step on the bytecode, replacing labels with memory address
+ * Verify all labels called exist, if not show user an error
+ * On success load bytecode into gemini system, 
+ *   turn on system, enable user interface button.
+ */
 void gemini::on_actionLoad_triggered()
 {
     ui->pushButton->setEnabled(false);
@@ -118,6 +139,7 @@ void gemini::on_actionLoad_triggered()
     operand.access_type = Gemini_access_type::VALUE;
     byte_code->insert(byte_code->begin(), operand);
 
+    //  Generate the label table to perform look ups against.
     std::map<Label, int> label_table;
     for ( std::size_t i = 0; i < byte_code->size(); i++)
     {
@@ -128,6 +150,7 @@ void gemini::on_actionLoad_triggered()
         }
     }
 
+    //  Check for the main label.
     if ( label_table.find(Label{"main"}) == label_table.end())
     {
         QMessageBox *mb = new QMessageBox(this);
@@ -141,11 +164,10 @@ void gemini::on_actionLoad_triggered()
     {
         if (bc.op == Gemini_op::BA || bc.op == Gemini_op::BE || bc.op == Gemini_op::BG || bc.op == Gemini_op::BL)
         {
-            //  TODO: Generate a warning dialog for unknown label lookup.
             if (label_table.find(bc.label) == label_table.end())
-            {
+            {   
                 QMessageBox *mb = new QMessageBox(this);
-                mb->setText("linking failed. label " + QString::fromStdString(bc.label) + " not found.");
+                mb->setText("Linking failed. label " + QString::fromStdString(bc.label) + " not found.");
                 mb->show();
             }
             else {
@@ -155,7 +177,7 @@ void gemini::on_actionLoad_triggered()
         }
     }
 
-    //  Send Byte_code to gemini system
+    //  Send pseudo Byte_code to gemini system
     gemini_system.load_byte_code(byte_code);
 
     //  Set CPU to ready
@@ -164,11 +186,16 @@ void gemini::on_actionLoad_triggered()
     //  Enable the 'next' button
     ui->pushButton->setEnabled(true);
 
+    //  Update the display to show the current cpu state
     this->gemini_display_callback();
 }
 
+/*
+ * User invokes a clock event sent to the CPU
+ */
 void gemini::on_pushButton_clicked()
 {
+    //  Make sure to check for a buffer overflow
     try {
         gemini_system.cycle_clock();
         this->gemini_display_callback();
@@ -176,13 +203,18 @@ void gemini::on_pushButton_clicked()
     catch (std::out_of_range excp) {
         QMessageBox *mb = new QMessageBox(this);
         mb->setText(QString::fromStdString(excp.what()));
-        mb->show();
+        mb->show();  // Display there was a buffer overflow
         this->gemini_display_callback();
+        //  invoke an error state
         set_cpu_error ();
+        //  shutdown the system
         gemini_system.power_off();
     }
 }
 
+/*
+ * On error disable further user input
+ */
 void gemini::set_cpu_error ()
 {
     ui->pushButton->setEnabled(false);

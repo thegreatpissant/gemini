@@ -13,7 +13,11 @@
  * - This is the base of the project.
  */
 
+/*
+ * Gemini types: Various types used in the gemini application
+ */
 #include "gemini_types.h"
+
 #include <iomanip>
 #include <sstream>
 
@@ -31,12 +35,16 @@ std::string gemini_operand_to_std_string ( Gemini_operand gemini_operand )
     return operand_string;
 }
 
+//  An include default translation of a Register_value to a std::string
 std::string gemini_register_value_to_std_string (Register_value memory)
 {
+    //  oh string streams how i am starting to understand thee ways
     std::stringstream s;
-    s << "0x" <<  std::setfill ('0') << std::setw(sizeof(Register_value)*2) <<
-         memory;
-//    return std::to_string(memory);
+    s << 
+      "0x" <<  //  Comment out this line for non hex values
+      std::setfill ('0') << std::setw(sizeof(Register_value)*2) <<
+      std::hex << //  Comment out this line for non hex values
+      memory;
     return s.str();
 }
 

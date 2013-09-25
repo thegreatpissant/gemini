@@ -13,12 +13,18 @@
  * - This is the base of the project.
  */
 
+/*
+ * The VALIDATOR!! - The Compiler, comming soon.
+ */
+
 #ifndef VALIDATOR_H
 #define VALIDATOR_H
 
 #include <memory>
 #include "gemini_types.h"
 
+//  Validate and translate the source file from what they think it is
+//  into a pseudo byte_code form, and return error lines if it is not.
 Error_lines validate_source (Source_code source_file, std::shared_ptr<Byte_code> byte_code);
 
 #endif // VALIDATOR_H

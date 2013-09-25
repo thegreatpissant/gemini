@@ -12,27 +12,34 @@
  * - Detection of memory access errors, Alert user of failure
  * - This is the base of the project.
  */
+
+/*
+ * Invalid_file_dialog: show the parsing errors of the files ways.
+ */
+
 #include "invalid_file_dialog.h"
 #include "ui_invalid_file_dialog.h"
 
+//  Constructor
 Invalid_file_dialog::Invalid_file_dialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Invalid_file_dialog)
 {
     ui->setupUi(this);
 }
-
 Invalid_file_dialog::~Invalid_file_dialog()
 {
     delete ui;
 }
 
+//  Setup the source code to display
 void Invalid_file_dialog::set_source_code(Source_code sc)
 {
     source_code = sc;
 }
 
-
+//  QT supports html markup so lets introduce some red lines for
+//  showing off those wonderfull errors.
 void Invalid_file_dialog::set_error_list(Error_lines el)
 {
     error_lines = el;

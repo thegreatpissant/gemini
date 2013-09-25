@@ -23,15 +23,18 @@
 
 namespace Gemini_parser {
 
+//  Global to this namespace
 std::string line;
-Gemini_operand *operand;
+Gemini_operand *operand;  //  TODO: change to shared_ptr <Gemini_operand> and test
 
+//  Remove the coment from the line
 void strip_comment ()
 {
     std::string t = line.substr(0, line.find_first_of ("!"));
     line = t;
 }
 
+//  is the line empty
 bool is_empty_line ()
 {
     if ( line.empty() )
@@ -43,6 +46,7 @@ bool is_empty_line ()
     return false;
 }
 
+//  Remove whitespace from begining of a line
 void strip_whitespace ( )
 {
     auto beg = line.find_first_not_of(" \t");
@@ -51,12 +55,11 @@ void strip_whitespace ( )
     line = line.substr(beg);
 }
 
+//  get the value see refernce for trailing whitespace test
 bool get_value ( Register_value &value )
 {
+    //  Need some sort of default 
     value = -1;
-//    std::string val = line.substr(0,line.find_first_not_of(" "));
-//    if (val.size() > 3)
-//        return false;
 
     //  As per http://www.kumobius.com/2013/08/c-string-to-int/
     //  With a trailing whitespace test.
@@ -81,6 +84,7 @@ bool get_value ( Register_value &value )
     }
 }
 
+//  Get the jump label
 bool get_jump_label ( )
 {
     operand->access_type = Gemini_access_type::VALUE;
@@ -97,6 +101,7 @@ bool get_jump_label ( )
     return true;
 }
 
+//  Is this a memory access?
 bool memory_access ( )
 {
     strip_whitespace ();
@@ -108,6 +113,8 @@ bool memory_access ( )
     }
     return false;
 }
+
+//  Is this a value access?
 bool value_access ( )
 {
     strip_whitespace ();
@@ -120,16 +127,20 @@ bool value_access ( )
     return false;
 }
 
+// Get opcode from the instruction string
 void get_opcode ( )
 {
     std::string::size_type idx_inst_beg, idx_op_end;
     std::string opcode;
 
+    //  identify the opcode
     idx_inst_beg = line.find_first_not_of(" \t");
     idx_op_end = line.substr(idx_inst_beg).find_first_of(" :\n");
 
+    //  parse out the opcode
     opcode = line.substr(idx_inst_beg, idx_op_end);
 
+    //  Translate into our enum
     if (opcode == "lda")
     {
         operand->op = Gemini_op::LDA;
@@ -189,14 +200,19 @@ void get_opcode ( )
         return;
     }
 
+    //  Clean up the rest of the line for residual junk check.
     if ( idx_op_end == std::string::npos )
         line.clear();
-    else
+    else //  What else is in the line?
         line = line.substr(idx_inst_beg+idx_op_end+1);
 }
 
+//  Interpret what the instruction requires of the opcode
 void parse_opcode ()
 {
+    strip_comment () ;
+    strip_whitespace ();
+
     if ( is_empty_line() )
     {
         operand->op = Gemini_op::EMPTY;
@@ -229,13 +245,11 @@ void parse_opcode ()
     return;
 }
 
+//  Parse the full instruction from opcode to value and return the operand.
 Gemini_operand * parse_instruction ( const std::string l)
 {
     line = l;
     operand = new Gemini_operand ();
-
-    strip_comment () ;
-    strip_whitespace ();
 
     parse_opcode ();
 

@@ -13,6 +13,7 @@
  * - This is the base of the project.
  */
 
+
 #ifndef GEMINI_SYSTEM_H
 #define GEMINI_SYSTEM_H
 
@@ -22,6 +23,9 @@
 #include "cpu.h"
 #include "memory.h"
 
+/*
+ *  Gemini system : Handles all items in a gemini system: CPU, MEMORY, BUS, IO
+ */
 class Gemini_system
 {
 private:
@@ -34,9 +38,13 @@ public:
     Gemini_system();
     void power_on ();
     void power_off();
+    //  send bytecode into the system
     void load_byte_code (std::shared_ptr<Byte_code> b_c );
+    //  external notification to cycle the clock
     void cycle_clock ();
+    //  A would be function pointer to the current ticking component
     void tick ();
+    //  Retrive some information about the system, for now it is the CPU registers
     Gemini_system_info get_system_info ();
 };
 

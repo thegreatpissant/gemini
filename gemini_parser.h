@@ -13,6 +13,10 @@
  * - This is the base of the project.
  */
 
+/*
+ *  Gemini parser: Parses a line of gemini asm checking for validity
+ *  and returning its operand equivilant.
+ */
 #ifndef GEMINI_PARSER_H
 #define GEMINI_PARSER_H
 
@@ -21,14 +25,21 @@
 #include <string>
 namespace Gemini_parser {
 
-
+  // get opcode from the instruction string
 void get_opcode();
+
+  //  Interpret what the instruction requires of the opcode
 void parse_opcode();
+  //  Is the line empty
 bool empty_line();
+  //  remove comment from line
 void strip_comment();
+  //  is this a memory access?
 bool memory_access();
+  //  is this a value access?
 bool value_access();
 
+  //  Parse the full instruction from opcode to value and return the operand.
 Gemini_operand * parse_instruction ( const std::string l);
 
 }
