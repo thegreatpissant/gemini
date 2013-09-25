@@ -49,9 +49,12 @@ bool is_empty_line ()
 //  Remove whitespace from begining of a line
 void strip_whitespace ( )
 {
-    auto beg = line.find_first_not_of(" \t");
+    auto beg = line.find_first_not_of(" \t\r\n");
     if ( beg == std::string::npos )
+    {
+        line.clear();
         return;
+    }
     line = line.substr(beg);
 }
 
@@ -89,14 +92,23 @@ bool get_jump_label ( )
 {
     operand->access_type = Gemini_access_type::VALUE;
     strip_whitespace ();
-    if (line.find_first_not_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos)
+    if ( line.empty())
         return false;
-    auto e = line.find_first_of(" ");
-    operand->label = line.substr(0, e);
+    auto e = line.find_first_not_of("abcdefghijklmnopqrstuvwxyz");
     if ( e == std::string::npos )
+        operand->label = line;
+    else
+        operand->label = line.substr(0, e);
+    if ( e == std::string::npos )
+    {
         line.clear();
+        return true;
+    }
     else
         line = line.substr(e);
+
+//        if (line.find_first_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos)
+//            return false;
 
     return true;
 }
@@ -204,7 +216,8 @@ void get_opcode ( )
     if ( idx_op_end == std::string::npos )
         line.clear();
     else //  What else is in the line?
-        line = line.substr(idx_inst_beg+idx_op_end+1);
+        line = line.substr(idx_inst_beg+idx_op_end);
+    strip_whitespace();
 }
 
 //  Interpret what the instruction requires of the opcode
@@ -250,7 +263,7 @@ Gemini_operand * parse_instruction ( const std::string l)
 {
     line = l;
     operand = new Gemini_operand ();
-
+    std::replace (line.begin(), line.end(), '\t', ' ');
     parse_opcode ();
 
     return operand;

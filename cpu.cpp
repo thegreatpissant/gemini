@@ -27,7 +27,6 @@ CPU::CPU()
 
 void CPU::tick()
 {
-    memory->tick ();
     //  cpu clock
     execute_instruction ();
 }

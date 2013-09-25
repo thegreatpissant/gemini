@@ -51,13 +51,15 @@ void Invalid_file_dialog::set_error_list(Error_lines el)
     {
         QString formated_line =
                 QString::number(line+1) + ":  " +
-                QString::fromStdString(source_code[line]) +
-                "<br>";
+                QString::fromStdString(source_code[line]).toHtmlEscaped();
+
+
         if ( *eline == line )
         {
             formated_line = "<font color=red><b>" + formated_line + "</b></font>";
             eline++;
         }
+        formated_line += " <br>";
         ui->textEdit->insertHtml(formated_line);
     }
 }

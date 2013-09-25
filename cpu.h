@@ -34,6 +34,9 @@ private:
 public:
     CPU();
 
+    //  Memory from the gemini_system
+    std::shared_ptr<Memory> memory;
+
     //  All gemini application bytecode stored here.
     std::shared_ptr<Byte_code> byte_code;
 
