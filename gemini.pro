@@ -57,4 +57,10 @@ OTHER_FILES += \
     doc/image4.gif \
     doc/test5.c \
     doc/project1.cpp \
-    doc/project2.html
+    doc/project2.html \
+    gemini_asm_files/t3.s \
+    gemini_asm_files/test1.s \
+    gemini_asm_files/test2.s \
+    gemini_asm_files/test3.s \
+    gemini_asm_files/test4.s \
+    gemini_asm_files/test5.s
