@@ -25,6 +25,6 @@
 
 //  Validate and translate the source file from what they think it is
 //  into a pseudo byte_code form, and return error lines if it is not.
-Error_lines validate_source (Source_code source_file, std::shared_ptr<Byte_code> byte_code);
+Error_lines validate_source (Source_code source_file, std::shared_ptr<Operand_code> operand_code);
 
 #endif // VALIDATOR_H

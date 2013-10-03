@@ -66,6 +66,7 @@ struct Gemini_system_info {
 };
 
 //  Abstract, Abstract, more custom types
+using Operand_code   = std::vector<Gemini_operand>;
 using Byte_code   = std::vector<Gemini_operand>;
 using Source_code = std::vector<std::string>;
 using Error_lines = std::vector<std::size_t>;

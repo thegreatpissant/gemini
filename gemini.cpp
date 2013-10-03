@@ -118,8 +118,8 @@ void gemini::on_actionLoad_triggered()
 
     //  TODO: Put into a compilation class and remove from this function
     //  Validate source code file and retrive its byte_code
-    std::shared_ptr<Byte_code> byte_code = std::shared_ptr<Byte_code> { new Byte_code };
-    Error_lines error_lines = validate_source (source_code, byte_code);
+    std::shared_ptr<Operand_code> operand_code = std::shared_ptr<Operand_code> { new Operand_code };
+    Error_lines error_lines = validate_source (source_code, operand_code);
     if (! error_lines.empty() )
     {
         Invalid_file_dialog * ifd  = new Invalid_file_dialog(this);
@@ -137,16 +137,16 @@ void gemini::on_actionLoad_triggered()
     operand.op = Gemini_op::BA;
     operand.label = "main";
     operand.access_type = Gemini_access_type::VALUE;
-    byte_code->insert(byte_code->begin(), operand);
+    operand_code->insert(operand_code->begin(), operand);
 
     //  Generate the label table to perform look ups against.
     std::map<Label, int> label_table;
-    for ( std::size_t i = 0; i < byte_code->size(); i++)
+    for ( std::size_t i = 0; i < operand_code->size(); i++)
     {
-        if ((*byte_code)[i].op == Gemini_op::LABEL)
+        if ((*operand_code)[i].op == Gemini_op::LABEL)
         {
-            label_table[(*byte_code)[i].label] = i;
-            byte_code->erase(byte_code->begin() + i);
+            label_table[(*operand_code)[i].label] = i;
+            operand_code->erase(operand_code->begin() + i);
         }
     }
 
@@ -159,26 +159,26 @@ void gemini::on_actionLoad_triggered()
         return;
     }
 
-    //  Link the labels to the bytecode
-    for (auto &bc : *byte_code)
+    //  Link in the labels
+    for (auto &oc : *operand_code)
     {
-        if (bc.op == Gemini_op::BA || bc.op == Gemini_op::BE || bc.op == Gemini_op::BG || bc.op == Gemini_op::BL)
+        if (oc.op == Gemini_op::BA || oc.op == Gemini_op::BE || oc.op == Gemini_op::BG || oc.op == Gemini_op::BL)
         {
-            if (label_table.find(bc.label) == label_table.end())
+            if (label_table.find(oc.label) == label_table.end())
             {   
                 QMessageBox *mb = new QMessageBox(this);
-                mb->setText("Linking failed. label " + QString::fromStdString(bc.label) + " not found.");
+                mb->setText("Linking failed. label " + QString::fromStdString(oc.label) + " not found.");
                 mb->show();
             }
             else {
-                bc.value = label_table[bc.label];
-                bc.label.clear();
+                oc.value = label_table[oc.label];
+                oc.label.clear();
             }
         }
     }
 
     //  Send pseudo Byte_code to gemini system
-    gemini_system.load_byte_code(byte_code);
+    gemini_system.load_byte_code(operand_code);
 
     //  Set CPU to ready
     gemini_system.power_on();
