@@ -38,21 +38,19 @@ void Invalid_file_dialog::set_source_code(Source_code sc)
     source_code = sc;
 }
 
-//  QT supports html markup so lets introduce some red lines for
-//  showing off those wonderfull errors.
-void Invalid_file_dialog::set_error_list(Error_lines el)
+void Invalid_file_dialog::Generate_error_list_text ()
 {
-    error_lines = el;
+    //  QT supports html markup so lets introduce some red lines for
+    //  showing off those wonderfull errors.
     ui->textEdit->toHtml();
     ui->textEdit->insertHtml("<b> Errors Found in file!! See <font color=red>RED</font> lines</b><br>");
 
-    auto eline = el.begin();
+    auto eline = error_lines.begin();
     for (std::size_t line = 0; line < source_code.size(); line++ )
     {
         QString formated_line =
                 QString::number(line+1) + ":  " +
                 QString::fromStdString(source_code[line]).toHtmlEscaped();
-
 
         if ( *eline == line )
         {
@@ -62,6 +60,12 @@ void Invalid_file_dialog::set_error_list(Error_lines el)
         formated_line += " <br>";
         ui->textEdit->insertHtml(formated_line);
     }
+}
+
+void Invalid_file_dialog::set_error_list(Error_lines el)
+{
+    error_lines = el;
+    Generate_error_list_text();
 }
 
 void Invalid_file_dialog::on_pushButton_clicked()

@@ -13,29 +13,31 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = gemini
 TEMPLATE = app
 CONFIG += c++11
+INCLUDEPATH = ./include
 
-SOURCES += main.cpp\
-        gemini.cpp \
-    cpu.cpp \
-    memory.cpp \
-    validator.cpp \
-    invalid_file_dialog.cpp \
-    gemini_parser.cpp \
-    gemini_system.cpp \
-    gemini_types.cpp
+SOURCES += src/invalid_file_dialog.cpp \
+    src/validator.cpp \
+    src/memory.cpp \
+    src/main.cpp \
+    src/gemini.cpp \
+    src/gemini_types.cpp \
+    src/gemini_system.cpp \
+    src/gemini_parser.cpp \
+    src/cpu.cpp
 
 
-HEADERS  += gemini.h \
-    cpu.h \
-    memory.h \
-    validator.h \
-    invalid_file_dialog.h \
-    gemini_parser.h \
-    gemini_types.h \
-    gemini_system.h
-
-FORMS    += gemini.ui \
-    invalid_file_dialog.ui
+HEADERS  += \
+    include/validator.h \
+    include/memory.h \
+    include/invalid_file_dialog.h \
+    include/gemini.h \
+    include/gemini_types.h \
+    include/gemini_system.h \
+    include/gemini_parser.h \
+    include/cpu.h
+FORMS    += \
+    ui/invalid_file_dialog.ui \
+    ui/gemini.ui
 
 OTHER_FILES += \
     README.md \

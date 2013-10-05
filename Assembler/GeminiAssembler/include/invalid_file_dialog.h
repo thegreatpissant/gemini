@@ -18,7 +18,8 @@
 
 #include <QDialog>
 
-#include "../../gemini_types.h"
+#include "gemini_types.h"
+#include <memory>
 
 /*
  * Invalid_file_dialog: show the parsing errors of the files ways.
@@ -35,15 +36,13 @@ private:
     Source_code source_code;
     Error_lines error_lines;
 
+    void Generate_error_list_text();
 public:
     explicit Invalid_file_dialog(QWidget *parent = 0);
     ~Invalid_file_dialog();
 
     //  Initialize the source code to display against
     void set_source_code ( Source_code sc );
-    //  Initialize the error lines to display.  This must happen second.
-    //  Since that is implicitly understood do we code a check against
-    //  it?
     void set_error_list  ( Error_lines el);
 
 private slots:

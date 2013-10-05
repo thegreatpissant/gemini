@@ -21,7 +21,7 @@
 #define VALIDATOR_H
 
 #include <memory>
-#include "../../gemini_types.h"
+#include "gemini_types.h"
 
 //  Validate and translate the source file from what they think it is
 //  into a pseudo byte_code form, and return error lines if it is not.

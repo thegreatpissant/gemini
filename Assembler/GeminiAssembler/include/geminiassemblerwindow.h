@@ -33,19 +33,20 @@ private slots:
 private:
     Ui::GeminiAssemblerWindow *ui;
 
-    std::shared_ptr <GeminiAssemblerModel> model;
-    std::shared_ptr <GeminiAssemblerControl> control;
+    GeminiAssemblerModel *model;
+    GeminiAssemblerControl *control;
 
     const QString default_assembly_button_text = "Click to load assembly file";
     const QString default_bytecode_button_text = "Click to load bytecode file";
 
 public:
-    void setModel (std::shared_ptr<GeminiAssemblerModel> g);
-    void setControl (std::shared_ptr<GeminiAssemblerControl> c);
+    void setModel (GeminiAssemblerModel *g);
+    void setControl (GeminiAssemblerControl *c);
 
     void alert_assembly_file_open_failed ();
     void alert_bytecode_file_open_failed ();
     void alert_assembly_conversion_failed ();
+    void alert_assembly_source_invalid();
 };
 
 #endif // GEMINIASSEMBLERWINDOW_H

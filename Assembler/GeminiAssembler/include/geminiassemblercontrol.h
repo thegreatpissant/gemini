@@ -10,19 +10,20 @@ class GeminiAssemblerWindow;
 
 class GeminiAssemblerControl {
 private:
-  std::shared_ptr<GeminiAssemblerModel> model;
-  std::shared_ptr<GeminiAssemblerWindow> view;
+  GeminiAssemblerModel *model;
+  GeminiAssemblerWindow *view;
 
 public:
   GeminiAssemblerControl();
 
-  void setModel (std::shared_ptr<GeminiAssemblerModel> m );
-  void setView  (std::shared_ptr<GeminiAssemblerWindow> v );
-
-  bool test_assembly_file ();
-  bool test_bytecode_file ();
+  void setModel (GeminiAssemblerModel *m );
+  void setView  (GeminiAssemblerWindow *v );
 
   bool convert_assembly_to_bytecode ();
+
+  bool test_and_read_assembly_file();
+  bool test_bytecode_file();
+  bool validate_assembly_source();
 };
 
 #endif // GEMINIASSEMBLERCONTROL_H
