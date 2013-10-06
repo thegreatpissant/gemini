@@ -18,16 +18,16 @@ SOURCES += src/main.cpp\
     src/geminiassemblermodel.cpp \
     src/geminiassemblercontrol.cpp \
     src/invalid_file_dialog.cpp \
-    src/validator.cpp \
-    src/gemini_parser.cpp
+    src/gemini_parser.cpp \
+    src/compiler.cpp
 
 HEADERS  += include/geminiassemblerwindow.h \
     include/geminiassemblermodel.h \
     include/geminiassemblercontrol.h \
     include/invalid_file_dialog.h \
-    include/validator.h \
     include/gemini_parser.h \
-    include/gemini_types.h
+    include/gemini_types.h \
+    include/compiler.h
 
 FORMS    += ui/geminiassemblerwindow.ui \
     ui/invalid_file_dialog.ui

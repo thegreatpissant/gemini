@@ -58,7 +58,7 @@ void strip_whitespace ( )
     line = line.substr(beg);
 }
 
-//  get the value see refernce for trailing whitespace test
+//  get the value see reference for trailing whitespace test
 bool get_value ( Register_value &value )
 {
     //  Need some sort of default 
@@ -121,7 +121,7 @@ bool memory_access ( )
     {
         operand->access_type = Gemini_access_type::MEMORY;
         line = line.substr(1);
-        return get_value ( operand->memory );
+        return get_value ( operand->value );
     }
     return false;
 }

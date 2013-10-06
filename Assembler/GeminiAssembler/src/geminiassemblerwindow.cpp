@@ -63,6 +63,11 @@ void GeminiAssemblerWindow::alert_assembly_source_invalid ()
     ifd->show();
 }
 
+void GeminiAssemblerWindow::alert_write_byte_code_to_file_failed()
+{
+    QMessageBox::critical (this, tr("Error"), tr("Writting Bytecode to file failed") );
+}
+
 void GeminiAssemblerWindow::on_pushButton_asmfile_clicked( )
 {
     QString file_name = QFileDialog::getOpenFileName( this, tr( "Open File" ), QString( ),
@@ -115,13 +120,18 @@ void GeminiAssemblerWindow::on_pushButton_convert_clicked( )
     if (!this->control->convert_assembly_to_bytecode())
     {
         this->alert_assembly_conversion_failed();
+        return;
     }
-    else
+    if (!this->control->write_byte_code_to_file())
     {
-        //  Tell the world we are done.
-        QMessageBox *mb = new QMessageBox(this);
-        mb->setText("Conversion finished!");
-        mb->show();
+        this->alert_write_byte_code_to_file_failed();
+        return;
     }
+
+    //  Tell the world we are done.
+    QMessageBox *mb = new QMessageBox(this);
+    mb->setText("Conversion finished!");
+    mb->show();
+
 
 }

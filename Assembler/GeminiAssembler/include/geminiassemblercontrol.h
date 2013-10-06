@@ -24,6 +24,7 @@ public:
   bool test_and_read_assembly_file();
   bool test_bytecode_file();
   bool validate_assembly_source();
+  bool write_byte_code_to_file();
 };
 
 #endif // GEMINIASSEMBLERCONTROL_H

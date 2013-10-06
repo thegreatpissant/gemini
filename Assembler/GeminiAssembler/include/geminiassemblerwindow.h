@@ -47,6 +47,7 @@ public:
     void alert_bytecode_file_open_failed ();
     void alert_assembly_conversion_failed ();
     void alert_assembly_source_invalid();
+    void alert_write_byte_code_to_file_failed();
 };
 
 #endif // GEMINIASSEMBLERWINDOW_H

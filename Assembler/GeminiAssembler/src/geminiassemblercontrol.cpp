@@ -1,5 +1,5 @@
 #include "geminiassemblercontrol.h"
-#include "validator.h"
+#include "compiler.h"
 
 #include <fstream>
 #include <map>
@@ -113,11 +113,29 @@ bool GeminiAssemblerControl::convert_assembly_to_bytecode()
     }
 
     //  Convert operands to gemini bytecode
+    Byte_code byte_code = operands_to_bytecode(operand_code);
 
-    //  Write out the bytecode file
-    std::ofstream bytecode_file (this->model->get_bytecode_file_name());
-    if (! bytecode_file )
+    if (byte_code.empty())
         return false;
 
+    this->model->set_bytecode(std::make_shared<Byte_code>(byte_code));
+
+    return true;
+}
+
+bool GeminiAssemblerControl::write_byte_code_to_file ()
+{
+    //  Write out the bytecode file
+   std::shared_ptr<Byte_code> byte_code = this->model->get_byte_code();
+
+    std::ofstream bytecode_file (this->model->get_bytecode_file_name(), std::ios::binary);
+    if (! bytecode_file )
+        return false;
+    for (auto &b: *byte_code)
+    {
+        u_int32_t bt = b;
+        bytecode_file.write((char*)&bt, sizeof(Byte_code_segment));
+    }
+    bytecode_file.close();
     return true;
 }

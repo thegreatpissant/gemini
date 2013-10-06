@@ -13,11 +13,11 @@
  * - This is the base of the project.
  */
 
-#include "validator.h"
+#include "compiler.h"
 #include "gemini_parser.h"
 
 /*
- * The VALIDATOR!! - The Compiler, comming soon.
+ * The Compiler
  */
 
 static void validate (Source_code &source_code, Operand_code &operand_code, Error_lines &error_lines)
@@ -51,4 +51,25 @@ Operand_code source_to_operands (std::shared_ptr<Source_code> source_code)
     return operand_code;
 }
 
+static Byte_code_segment to_byte_code_segment (Gemini_operand gop)
+{
+    Byte_code_segment byte_code_segment;
+    byte_code_segment ^= byte_code_segment;
+    byte_code_segment |= static_cast<u_int8_t>(gop.op);
+    byte_code_segment <<= 8;
+    byte_code_segment |= static_cast<u_int8_t>(gop.access_type);
+    byte_code_segment <<= 16;
+    byte_code_segment |= gop.value;
+    return byte_code_segment;
+}
+
+Byte_code operands_to_bytecode(std::shared_ptr<Operand_code> operand_code)
+{
+    Byte_code byte_code;
+    for (auto &oc: *operand_code)
+    {
+        byte_code.push_back( to_byte_code_segment(oc) );
+    }
+    return byte_code;
+}
 

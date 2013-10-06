@@ -29,6 +29,7 @@ public:
   std::shared_ptr<Source_code> get_source_code ();
   bool assembly_file_name_is_set ();
   bool bytecode_file_name_is_set ();
+  std::shared_ptr<Byte_code> get_byte_code();
 };
 
 #endif // GEMINIASSEMBLERMODEL_H

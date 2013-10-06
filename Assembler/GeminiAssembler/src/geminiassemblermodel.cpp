@@ -29,6 +29,10 @@ std::shared_ptr<Source_code> GeminiAssemblerModel::get_source_code()
 {
     return this->assembly_code;
 }
+std::shared_ptr<Byte_code> GeminiAssemblerModel::get_byte_code ()
+{
+    return this->byte_code;
+}
 
 bool GeminiAssemblerModel::assembly_file_name_is_set()
 {
