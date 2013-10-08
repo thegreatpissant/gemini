@@ -10,28 +10,28 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = gemini
+TARGET = Gemini
 TEMPLATE = app
 CONFIG += c++11
-INCLUDEPATH = ./include
+INCLUDEPATH = ./Gemini/include
 
 SOURCES += \
-    src/memory.cpp \
-    src/main.cpp \
-    src/gemini.cpp \
-    src/gemini_types.cpp \
-    src/gemini_system.cpp \
-    src/cpu.cpp
+    Gemini/src/memory.cpp \
+    Gemini/src/main.cpp \
+    Gemini/src/gemini.cpp \
+    Gemini/src/gemini_types.cpp \
+    Gemini/src/gemini_system.cpp \
+    Gemini/src/cpu.cpp
 
 
 HEADERS  += \
-    include/memory.h \
-    include/gemini.h \
-    include/gemini_types.h \
-    include/gemini_system.h \
-    include/cpu.h
+    Gemini/include/memory.h \
+    Gemini/include/gemini.h \
+    Gemini/include/gemini_types.h \
+    Gemini/include/gemini_system.h \
+    Gemini/include/cpu.h
 FORMS    += \
-    ui/gemini.ui
+    Gemini/ui/gemini.ui
 
 OTHER_FILES += \
     README.md \
