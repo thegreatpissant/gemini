@@ -17,8 +17,6 @@
 #include "ui_gemini.h"
 #include "gemini_types.h"
 #include "gemini_system.h"
-#include "validator.h"
-#include "invalid_file_dialog.h"
 
 #include <stdexcept>
 
@@ -27,6 +25,8 @@
 #include <QMessageBox>
 #include <QTextStream>
 #include <QString>
+
+#include <fstream>
 
 extern Gemini_system gemini_system;
 
@@ -60,14 +60,11 @@ void gemini::gemini_display_callback()
    ui->reg_MAR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MAR )));
    ui->reg_MDR  ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.MDR )));
    ui->reg_TEMP ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.TEMP )));
-// Will change back when using bytecode
-// ui->reg_IR   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.IR )));
+   ui->reg_IR   ->setText( QString::fromStdString( gemini_instruction_register_value_to_std_string(gemini_system_info.IR )));
+   ui->inst_label_value ->setText( QString::fromStdString( gemini_instruction_register_to_std_string(gemini_system_info.IR )));
    ui->reg_CC   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CC )));
-
-    //  Set the Instruction label
-    ui->inst_label_value ->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
-    //  TODO: dont forget to change this later for the bytecode, These are the same for now
-    ui->reg_IR->setText(QString::fromStdString(gemini_operand_to_std_string(gemini_system_info.instruction)));
+   ui->reg_CE   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CE )));
+   ui->jmp_stack_depth_label_value ->setText( (QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.jmp_stack_depth))));
 
     //  Set the Instruction index label
    ui->inst_label_index ->setText( QString::fromStdString(gemini_register_value_to_std_string(gemini_system_info.instruction_index)));
@@ -82,103 +79,35 @@ void gemini::on_actionQuit_triggered()
     qApp->quit();
 }
 
-/*
- * Load a gemini '.s' asm file
- * Recieve the validated line as a intermediary bytecode representation
- * If any errors found show a multiline listing of the asm file with highlighted lines of found errors.
- * Perform a small "Linking" step on the bytecode, replacing labels with memory address
- * Verify all labels called exist, if not show user an error
- * On success load bytecode into gemini system, 
- *   turn on system, enable user interface button.
- */
+
 void gemini::on_actionLoad_triggered()
 {
     ui->pushButton->setEnabled(false);
     QString file_name = QFileDialog::getOpenFileName(
                 this,
-                tr("Open File"), QString (), tr ("Gemini Files (*.s)"));
+                tr("Open File"), QString (), tr ("Gemini Files (*.*)"));
 
     if ( file_name.isEmpty() )
         return;
 
-    QFile file( file_name );
-    if ( !file.open( QIODevice::ReadOnly) ) {
-        QMessageBox::critical (this, tr("Error"), tr("Could not open file") );
+    std::ifstream file( file_name.toStdString(), std::ios::binary);
+    if ( !file ) {
+        QMessageBox::critical (this, tr("Error"), tr("Could not open bytecode file") );
         return;
     }
 
-    Source_code source_code;
-    QTextStream in (&file);
-    QTextStream in_stream (&file);
-    while (!in_stream.atEnd())
+    std::shared_ptr<Byte_code> byte_code = std::shared_ptr<Byte_code> (new Byte_code);
+    Byte_code_segment bcs;
+    while (file.read((char*)&bcs, sizeof(Byte_code_segment)))
     {
-        source_code.push_back ( in_stream.readLine().toStdString() );
+        (*byte_code).push_back(bcs);
     }
+
     file.close();
 
-    //  TODO: Put into a compilation class and remove from this function
-    //  Validate source code file and retrive its byte_code
-    std::shared_ptr<Operand_code> operand_code = std::shared_ptr<Operand_code> { new Operand_code };
-    Error_lines error_lines = validate_source (source_code, operand_code);
-    if (! error_lines.empty() )
-    {
-        Invalid_file_dialog * ifd  = new Invalid_file_dialog(this);
-        ifd->set_source_code( source_code );
-        ifd->set_error_list( error_lines );
-        ifd->show();
-        return;
-    }
-
-    //  TODO::Spawn this into its own thread
-    //  Linker
-
-    //  insert a branch always to the location of main as the first instruction
-    Gemini_operand operand;
-    operand.op = Gemini_op::BA;
-    operand.label = "main";
-    operand.access_type = Gemini_access_type::VALUE;
-    operand_code->insert(operand_code->begin(), operand);
-
-    //  Generate the label table to perform look ups against.
-    std::map<Label, int> label_table;
-    for ( std::size_t i = 0; i < operand_code->size(); i++)
-    {
-        if ((*operand_code)[i].op == Gemini_op::LABEL)
-        {
-            label_table[(*operand_code)[i].label] = i;
-            operand_code->erase(operand_code->begin() + i);
-        }
-    }
-
-    //  Check for the main label.
-    if ( label_table.find(Label{"main"}) == label_table.end())
-    {
-        QMessageBox *mb = new QMessageBox(this);
-        mb->setText("linking failed. main label not found.");
-        mb->show();
-        return;
-    }
-
-    //  Link in the labels
-    for (auto &oc : *operand_code)
-    {
-        if (oc.op == Gemini_op::BA || oc.op == Gemini_op::BE || oc.op == Gemini_op::BG || oc.op == Gemini_op::BL)
-        {
-            if (label_table.find(oc.label) == label_table.end())
-            {   
-                QMessageBox *mb = new QMessageBox(this);
-                mb->setText("Linking failed. label " + QString::fromStdString(oc.label) + " not found.");
-                mb->show();
-            }
-            else {
-                oc.value = label_table[oc.label];
-                oc.label.clear();
-            }
-        }
-    }
 
     //  Send pseudo Byte_code to gemini system
-    gemini_system.load_byte_code(operand_code);
+    gemini_system.load_byte_code(byte_code);
 
     //  Set CPU to ready
     gemini_system.power_on();

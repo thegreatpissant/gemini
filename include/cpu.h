@@ -20,6 +20,7 @@
 #include "memory.h"
 
 #include <memory>
+#include <stack>
 
 
 /*
@@ -30,6 +31,9 @@ class CPU
 {
 private:
     void execute_instruction();  //  Should end up as a function pointer that we use if powered on
+    Register_value get_value(Instruction_register ir);
+    Gemini_op_type get_op(Instruction_register ir);
+    Gemini_access_type get_access_type(Instruction_register ir);
 
 public:
     CPU();
@@ -48,17 +52,22 @@ public:
     Register_value Acc;
     Register_value Zero;
     Register_value One;
-    std::size_t PC;
+    Register_value PC;
     Register_value MAR;
     Register_value MDR;
     Register_value TEMP;
-    Gemini_operand IR;
-/*  Change to in later version
- *     Gemini_byte_code IR; */
+
+    Instruction_register IR;
+
     Register_value CC;
+    Register_value CE;
+
+    std::stack <Register_value> jmp_stack;
+    const int JMP_STACK_MAX_DEPTH = 25;
+    int jmp_stack_depth;
 
     Register_value instruction_index;  //  not sure what the instruction_index was for
-    Gemini_operand instruction;
+
 
     //  External action to initiate a clock tick
     void tick();

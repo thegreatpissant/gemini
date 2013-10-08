@@ -154,7 +154,7 @@
       <x>10</x>
       <y>138</y>
       <width>261</width>
-      <height>287</height>
+      <height>251</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -285,6 +285,16 @@
             <widget class="QLabel" name="label_12">
              <property name="text">
               <string>CC</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_41">
+             <property name="text">
+              <string>CE</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -437,6 +447,16 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QLabel" name="label_42">
+             <property name="text">
+              <string>[</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -551,6 +571,16 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QLabel" name="reg_CE">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -632,6 +662,13 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QLabel" name="label_43">
+             <property name="text">
+              <string>]</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
@@ -645,8 +682,8 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>261</width>
-      <height>46</height>
+      <width>531</width>
+      <height>56</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -657,12 +694,18 @@
          <property name="text">
           <string>Instruction Index:</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_38">
          <property name="text">
           <string>Instruction:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -683,16 +726,6 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
          <item>
-          <widget class="QLabel" name="label_39">
-           <property name="text">
-            <string>[</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QLabel" name="inst_label_value">
            <property name="midLineWidth">
             <number>0</number>
@@ -705,14 +738,52 @@
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="label_40">
-           <property name="text">
-            <string>]</string>
-           </property>
-          </widget>
-         </item>
         </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_9">
+       <item>
+        <widget class="QLabel" name="label_44">
+         <property name="text">
+          <string>Jump Stack Depth:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_46">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_10">
+       <item>
+        <widget class="QLabel" name="jmp_stack_depth_label_value">
+         <property name="midLineWidth">
+          <number>0</number>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_49">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -731,12 +802,6 @@
      <string>[Area TBD]</string>
     </property>
    </widget>
-   <zorder>verticalLayoutWidget</zorder>
-   <zorder>pushButton</zorder>
-   <zorder>horizontalLayoutWidget_3</zorder>
-   <zorder>horizontalLayoutWidget_5</zorder>
-   <zorder>reg_TEMP</zorder>
-   <zorder>label_37</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QMenuBar" name="menuBar">
@@ -745,7 +810,7 @@
      <x>0</x>
      <y>0</y>
      <width>662</width>
-     <height>25</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

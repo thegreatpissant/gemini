@@ -76,8 +76,8 @@ Gemini_system_info Gemini_system::get_system_info()
     tmp.TEMP = cpu.TEMP;
     tmp.IR = cpu.IR;
     tmp.CC = cpu.CC;
+    tmp.CE = cpu.CE;
     tmp.instruction_index = cpu.instruction_index;
-    tmp.instruction = cpu.instruction;
-
+    tmp.jmp_stack_depth = cpu.jmp_stack_depth;
     return tmp;
 }

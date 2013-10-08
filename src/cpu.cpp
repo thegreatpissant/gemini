@@ -13,187 +13,310 @@
  * - This is the base of the project.
  */
 
-
 /*
  *  Gemini system CPU: Performs operations and generates clock signals.
  *
  */
 
 #include "cpu.h"
+#include <stdexcept>
 
-CPU::CPU()
+CPU::CPU( )
 {
+    jmp_stack_depth = 0;
 }
 
-void CPU::tick()
+void CPU::tick( )
 {
     //  cpu clock
-    execute_instruction ();
+    execute_instruction( );
 }
 
-void CPU::execute_instruction ()
+void CPU::execute_instruction( )
 {
-    if (PC >= (*byte_code).size())
+    if ( PC >= ( *byte_code ).size( ) )
     {
         return;
     }
-    instruction = (*byte_code)[PC];
+    this->IR = ( *byte_code )[PC];
 
     Value value;
 
-    switch (instruction.op) {
-    case Gemini_op::LDA :
-        if (instruction.access_type == Gemini_access_type::MEMORY)
+    switch ( static_cast<Gemini_op>( get_op( IR ) ) )
+    {
+    case Gemini_op::LDA:
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
         {
-            value = memory->get_memory(instruction.memory);
+            value = memory->get_memory( get_value( IR ) );
         }
-        else if (instruction.access_type == Gemini_access_type::VALUE)
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
         {
-            value = instruction.value;
+            value = get_value( IR );
         }
         Acc = value;
         PC++;
         break;
-    case Gemini_op::STA :
-        memory->set_memory(instruction.memory, Acc);
+    case Gemini_op::STA:
+        memory->set_memory( get_value( IR ), Acc );
         PC++;
         break;
-    case Gemini_op::ADD :
-        if (instruction.access_type == Gemini_access_type::MEMORY)
+    case Gemini_op::ADD:
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
         {
-            value = memory->get_memory(instruction.memory);
+            value = memory->get_memory( get_value( IR ) );
         }
-        else if (instruction.access_type == Gemini_access_type::VALUE)
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
         {
-            value = instruction.value;
+            value = get_value( IR );
         }
         Acc += value;
-        if (Acc > 0)
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
             CC = 1;
-        if (Acc == 0)
+        else
             CC = 0;
-        if (Acc < 0)
-            CC = -1;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
         PC++;
         break;
     case Gemini_op::SUB:
-        if (instruction.access_type == Gemini_access_type::MEMORY)
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
         {
-            value = memory->get_memory(instruction.memory);
+            value = memory->get_memory( get_value( IR ) );
         }
-        else if (instruction.access_type == Gemini_access_type::VALUE)
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
         {
-            value = instruction.value;
+            value = get_value( IR );
         }
         Acc -= value;
-        if (Acc > 0)
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
             CC = 1;
-        if (Acc == 0)
+        else
             CC = 0;
-        if (Acc < 0)
-            CC = -1;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
+        PC++;
+        break;
+    case Gemini_op::MUL:
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        Acc *= value;
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
+            CC = 1;
+        else
+            CC = 0;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
+        PC++;
+        break;
+    case Gemini_op::DIV:
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        Acc /= value;
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
+            CC = 1;
+        else
+            CC = 0;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
         PC++;
         break;
     case Gemini_op::AND:
-        if (instruction.access_type == Gemini_access_type::MEMORY)
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
         {
-            value = memory->get_memory(instruction.memory);
+            value = memory->get_memory( get_value( IR ) );
         }
-        else if (instruction.access_type == Gemini_access_type::VALUE)
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
         {
-            value = instruction.value;
+            value = get_value( IR );
         }
         Acc &= value;
-        if (Acc > 0)
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
             CC = 1;
-        if (Acc == 0)
+        else
             CC = 0;
-        if (Acc < 0)
-            CC = -1;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
         PC++;
         break;
     case Gemini_op::OR:
-        if (instruction.access_type == Gemini_access_type::MEMORY)
+
+        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
         {
-            value = memory->get_memory(instruction.memory);
+            value = memory->get_memory( get_value( IR ) );
         }
-        else if (instruction.access_type == Gemini_access_type::VALUE)
+        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
         {
-            value = instruction.value;
+            value = get_value( IR );
         }
         Acc |= value;
-        if (Acc > 0)
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
             CC = 1;
-        if (Acc == 0)
+        else
             CC = 0;
-        if (Acc < 0)
-            CC = -1;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
         PC++;
         break;
     case Gemini_op::NOTA:
         Acc = ~Acc;
-        if (Acc > 0)
+        if ( Acc > 0 )
+            CC = 2;
+        else if ( Acc < 0 )
             CC = 1;
-        if (Acc == 0)
+        else
             CC = 0;
-        if (Acc < 0)
-            CC = -1;
+        if ( Acc == 0 )
+            CE = 1;
+        else
+            CE = 0;
         PC++;
         break;
+    case Gemini_op::JMP:
+        if (++jmp_stack_depth > JMP_STACK_MAX_DEPTH)
+            throw (std::out_of_range("Stack overflow"));
+        jmp_stack.push(PC+1);
+        PC = get_value( IR );
+        break;
+    case Gemini_op::RET:
+        if (--jmp_stack_depth < 0)
+            throw (std::out_of_range("Stack underflow"));
+        PC = jmp_stack.top();
+        jmp_stack.pop();
+        break;
     case Gemini_op::BA:
-        PC = instruction.value;
+        PC = get_value( IR );
         break;
     case Gemini_op::BE:
-        if ( CC == 0 )
-            PC = instruction.value;
+        if ( CE == 0 )
+            PC = get_value( IR );
         else
             PC++;
         break;
     case Gemini_op::BL:
-        if ( CC < 0 )
-            PC = instruction.value;
+        if ( CC == 1 )
+            PC = get_value( IR );
         else
-            PC ++;
+            PC++;
         break;
     case Gemini_op::BG:
-        if ( CC > 0 )
-            PC = instruction.value;
+        if ( CC == 2 )
+            PC = get_value( IR );
+        else
+            PC++;
+        break;
+    case Gemini_op::BGE:
+        if ( CC == 2 && CE == 1 )
+            PC = get_value ( IR );
         else
             PC ++;
         break;
+    case Gemini_op::BLE:
+        if ( CC == 1 && CE == 1 )
+            PC = get_value ( IR );
+        else
+            PC++;
+        break;
+    case Gemini_op::BNE:
+        if ( CE == 0 )
+            PC = get_value ( IR );
+        else
+            PC++;
+        break;
+
     case Gemini_op::NOP:
         Acc += 0;
         PC++;
         break;
+    case Gemini_op::HLT:
+        PC = (*byte_code).size ();
+        break;
     case Gemini_op::LABEL:
+        break;
     case Gemini_op::EMPTY:
+        break;
     case Gemini_op::INVALID:
         break;
     }
 }
 
-void CPU::initialize()
+Register_value CPU::get_value( Instruction_register ir )
 {
-  
+    Instruction_register tmp = ir;
+    tmp &= 0x000000FF;
+    return ( (Register_value)tmp );
+}
+
+Gemini_op_type CPU::get_op( Instruction_register ir )
+{
+    Instruction_register tmp = ir;
+    tmp &= 0xFF000000;
+    tmp >>= 24;
+    return ( (Gemini_op_type)tmp );
+}
+
+Gemini_access_type CPU::get_access_type( Instruction_register ir )
+{
+    Instruction_register tmp = ir;
+    tmp &= 0x00FF0000;
+    tmp >>= 16;
+    return ( (Gemini_access_type) tmp );
+}
+
+void CPU::initialize( )
+{
     Zero = 0;
     One = 1;
     PC = instruction_index = 0;
-    instruction = (*byte_code)[PC];
+    IR = ( *byte_code )[PC];
 }
 
-void CPU::stop ()
+void CPU::stop( )
 {
-    PC = byte_code->size ();
+    PC = byte_code->size( );
 }
 
-void CPU::load_byte_code(std::shared_ptr<Byte_code> bc)
+void CPU::load_byte_code( std::shared_ptr<Byte_code> bc )
 {
     byte_code = bc;
 }
 
-void CPU::set_memory(std::shared_ptr<Memory> mem)
+void CPU::set_memory( std::shared_ptr<Memory> mem )
 {
     memory = mem;
 }
-
-

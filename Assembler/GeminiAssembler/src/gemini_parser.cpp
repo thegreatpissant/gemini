@@ -169,6 +169,14 @@ void get_opcode ( )
     {
         operand->op = Gemini_op::SUB;
     }
+    else if (opcode == "mul")
+    {
+        operand->op = Gemini_op::MUL;
+    }
+    else if (opcode == "div")
+    {
+        operand->op = Gemini_op::DIV;
+    }
     else if (opcode == "and")
     {
         operand->op = Gemini_op::AND;
@@ -196,6 +204,30 @@ void get_opcode ( )
     else if (opcode == "bg")
     {
         operand->op = Gemini_op::BG;
+    }
+    else if (opcode == "bge")
+    {
+        operand->op = Gemini_op::BGE;
+    }
+    else if (opcode == "ble")
+    {
+        operand->op = Gemini_op::BLE;
+    }
+    else if (opcode == "bne")
+    {
+        operand->op = Gemini_op::BNE;
+    }
+    else if (opcode == "ret")
+    {
+        operand->op = Gemini_op::RET;
+    }
+    else if (opcode == "hlt")
+    {
+        operand->op = Gemini_op::HLT;
+    }
+    else if (opcode == "jmp")
+    {
+        operand->op = Gemini_op::JMP;
     }
     else if (opcode == "nop")
     {
@@ -240,11 +272,14 @@ void parse_opcode ()
     if (operand->op == Gemini_op::LABEL)
         return;
 
-    if ( (operand->op == Gemini_op::NOP || operand->op == Gemini_op::NOTA) && is_empty_line () )
+    if ( (operand->op == Gemini_op::NOP || operand->op == Gemini_op::NOTA ||
+          operand->op == Gemini_op::RET || operand->op == Gemini_op::HLT) && is_empty_line () )
         return;
 
     if ( operand->op == Gemini_op::BA || operand->op == Gemini_op::BE ||
-         operand->op == Gemini_op::BG || operand->op == Gemini_op::BL)
+         operand->op == Gemini_op::BG || operand->op == Gemini_op::BL ||
+         operand->op == Gemini_op::BGE || operand->op == Gemini_op::BLE ||
+         operand->op == Gemini_op::BNE || operand->op == Gemini_op::JMP )
     {
         if ( get_jump_label () && is_empty_line () )
             return;

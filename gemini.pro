@@ -15,28 +15,22 @@ TEMPLATE = app
 CONFIG += c++11
 INCLUDEPATH = ./include
 
-SOURCES += src/invalid_file_dialog.cpp \
-    src/validator.cpp \
+SOURCES += \
     src/memory.cpp \
     src/main.cpp \
     src/gemini.cpp \
     src/gemini_types.cpp \
     src/gemini_system.cpp \
-    src/gemini_parser.cpp \
     src/cpu.cpp
 
 
 HEADERS  += \
-    include/validator.h \
     include/memory.h \
-    include/invalid_file_dialog.h \
     include/gemini.h \
     include/gemini_types.h \
     include/gemini_system.h \
-    include/gemini_parser.h \
     include/cpu.h
 FORMS    += \
-    ui/invalid_file_dialog.ui \
     ui/gemini.ui
 
 OTHER_FILES += \

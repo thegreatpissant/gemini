@@ -48,14 +48,14 @@ enum class Gemini_op : u_int8_t
     NOP   = 0x0C,
     EMPTY = 0xFE,
     INVALID = 0xFF,
-//    BGE   = 0x0D,
-//    BLE   = 0x0E,
-//    BNE   = 0x0F,
-//    MUL   = 0x10,
-//    DIV   = 0x11,
-//    JMP   = 0x12,
-//    RET   = 0x13,
-//    HLT   = 0x14
+    BGE   = 0x0D,
+    BLE   = 0x0E,
+    BNE   = 0x0F,
+    MUL   = 0x10,
+    DIV   = 0x11,
+    JMP   = 0x12,
+    RET   = 0x13,
+    HLT   = 0x14
 };
 enum class Gemini_access_type : u_int8_t
 {
@@ -87,8 +87,11 @@ struct Gemini_system_info
     Memory_loc TEMP;
     Instruction_register  IR;
     Memory_loc CC;
+    Memory_loc CE;
     Gemini_operand instruction;
     Memory_loc instruction_index;
+    int jmp_stack_depth;
+
 };
 
 //  Abstract, Abstract, more custom types

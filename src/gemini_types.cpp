@@ -22,51 +22,82 @@
 #include <sstream>
 
 //  An include default translation of a Gemini_operand to a std::string
-std::string gemini_operand_to_std_string ( Gemini_operand gemini_operand )
+std::string gemini_instruction_register_to_std_string ( Instruction_register ir )
 {
+    Instruction_register tmp = ir;
+    tmp &= 0xff000000;
+    tmp >>= 24;
+    Gemini_op gop = (Gemini_op)tmp;
+    tmp = ir;
+    tmp &= 0x00ff0000;
+    tmp >>=16;
+    Gemini_access_type gopt = (Gemini_access_type) tmp;
+    tmp = ir;
+    tmp &= 0x000000ff;
+    Value v = (Value)tmp;
+
     std::string operand_string =
-        gemini_op_to_std_string (gemini_operand.op) + " " +
-        gemini_access_type_to_std_string(gemini_operand.access_type) + " ";
-    if (gemini_operand.access_type == Gemini_access_type::MEMORY)
-        operand_string += gemini_register_value_to_std_string(gemini_operand.memory);
-    else
-        operand_string += gemini_register_value_to_std_string(gemini_operand.value);
+            gemini_op_to_std_string ( gop ) + " " +
+            gemini_access_type_to_std_string( gopt ) + " "
+    +
+            gemini_value_to_std_string( v );
 
     return operand_string;
 }
 
-//  An include default translation of a Register_value to a std::string
-std::string gemini_register_value_to_std_string (Register_value memory)
+std::string gemini_instruction_register_value_to_std_string(Instruction_register ir)
 {
-    //  oh string streams how i am starting to understand thee ways
     std::stringstream s;
-    s << 
-      "0x" <<  //  Comment out this line for non hex values
-      std::setfill ('0') << std::setw(sizeof(Register_value)*2) <<
-      std::hex << //  Comment out this line for non hex values
-      memory;
+    s <<
+         "0x" <<
+         std::setfill ('0') << std::setw(sizeof(Instruction_register) * 2) <<
+         std::hex <<
+         static_cast <u_int32_t> (ir);
+    return s.str();
+}
+
+std::string gemini_register_value_to_std_string (Register_value rv)
+{
+    std::stringstream s;
+    s <<
+         "0x" <<
+         std::setfill ('0') << std::setw(sizeof (Value)*2) <<
+         std::hex <<
+         static_cast<u_int16_t>(rv);
+    return s.str();
+}
+
+std::string gemini_value_to_std_string (Value value)
+{
+    std::stringstream s;
+    s <<
+         "0x" <<
+         std::setfill ('0') << std::setw(sizeof (Value)*2) <<
+         std::hex <<
+         static_cast<u_int16_t>(value);
     return s.str();
 }
 
 //  An include default translation of a Gemini_access_type to a std::string
 std::string gemini_access_type_to_std_string ( Gemini_access_type gemini_access_type )
 {
-    switch (gemini_access_type)
+    switch (static_cast<Gemini_access_type>(gemini_access_type))
     {
     case Gemini_access_type::MEMORY :
         return std::string {"M"};
     case Gemini_access_type::VALUE :
-        return std::string {"V"};
-    case Gemini_access_type::NONE :
         return std::string {"I"};
+    case Gemini_access_type::NONE :
+        return std::string {"N"};
     }
-    return std::string {"I"};
+    return std::string {"N"};
 }
+
 
 //  An include default translation of a Gemini_op to a std::string
 std::string gemini_op_to_std_string ( Gemini_op gemini_op )
 {
-    switch (gemini_op)
+    switch (static_cast<Gemini_op>(gemini_op))
     {
     case Gemini_op::LABEL :
         return std::string {"LABEL"};
@@ -78,6 +109,10 @@ std::string gemini_op_to_std_string ( Gemini_op gemini_op )
         return std::string {"ADD"};
     case Gemini_op::SUB:
         return std::string {"SUB"};
+    case Gemini_op::MUL:
+       return std::string {"MUL"};
+    case Gemini_op::DIV:
+       return std::string {"DIV"};
     case Gemini_op::AND:
         return std::string {"AND"};
     case Gemini_op::OR:
@@ -92,6 +127,18 @@ std::string gemini_op_to_std_string ( Gemini_op gemini_op )
         return std::string {"BL"};
     case Gemini_op::BG:
         return std::string {"BG"};
+    case Gemini_op::BGE:
+        return std::string {"BGE"};
+    case Gemini_op::BLE:
+      return std::string {"BLE"};
+    case Gemini_op::BNE:
+        return std::string {"BNE"};
+    case Gemini_op::JMP:
+       return std::string {"JMP"};
+    case Gemini_op::RET:
+        return std::string {"RET"};
+    case Gemini_op::HLT:
+        return std::string {"HLT"};
     case Gemini_op::NOP:
         return std::string {"NOP"};
     case Gemini_op::INVALID:
@@ -101,4 +148,5 @@ std::string gemini_op_to_std_string ( Gemini_op gemini_op )
 }
     return std::string {"INVALID"};
 }
+
 
