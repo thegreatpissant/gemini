@@ -30,11 +30,13 @@
 //using Instruction_register = u_int32_t;
 //using Gemini_op_type = u_int8_t;
 
-typedef u_int8_t Register_value;
 typedef u_int8_t Memory_loc;
-typedef u_int8_t Value;
-typedef u_int32_t Instruction_register;
 typedef u_int8_t Gemini_op_type;
+typedef int16_t Value;
+typedef int16_t Register_value;
+typedef u_int32_t Instruction_register;
+using Byte_code_segment = u_int32_t;
+using Byte_code = std::vector<Byte_code_segment>;
 
 //  new type of enums
 enum class Gemini_op : Gemini_op_type
@@ -88,10 +90,6 @@ struct Gemini_system_info
     Register_value instruction_index;
     int jmp_stack_depth;
 };
-
-//  More custom types
-using Byte_code_segment = u_int32_t;
-using Byte_code = std::vector<Byte_code_segment>;
 
 std::string gemini_op_to_std_string( Gemini_op gemini_op );
 std::string gemini_access_type_to_std_string( Gemini_access_type gemini_access_type );

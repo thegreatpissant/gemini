@@ -55,9 +55,12 @@ static Byte_code_segment to_byte_code_segment (Gemini_operand gop)
 {
     Byte_code_segment byte_code_segment;
     byte_code_segment ^= byte_code_segment;
+    //  Assign in the OP Code
     byte_code_segment |= static_cast<u_int8_t>(gop.op);
+    //  Assign in the Access type (Memory or Direct)
     byte_code_segment <<= 8;
     byte_code_segment |= static_cast<u_int8_t>(gop.access_type);
+    //  Assign the value
     byte_code_segment <<= 16;
     byte_code_segment |= gop.value;
     return byte_code_segment;

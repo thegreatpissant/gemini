@@ -59,7 +59,7 @@ void strip_whitespace ( )
 }
 
 //  get the value see reference for trailing whitespace test
-bool get_value ( Register_value &value )
+bool get_value ( Value &value )
 {
     //  Need some sort of default 
     value = -1;

@@ -278,7 +278,7 @@ void CPU::execute_instruction( )
 Register_value CPU::get_value( Instruction_register ir )
 {
     Instruction_register tmp = ir;
-    tmp &= 0x000000FF;
+    tmp &= 0x0000FFFF;
     return ( (Register_value)tmp );
 }
 

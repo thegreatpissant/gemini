@@ -26,9 +26,8 @@
 //  Validate source code file.  Return error line numbers if any
 Error_lines validate_source (Source_code source_code);
 
-//  Translate source code to operands and return them.
+//  Translate source code, 2 stage proccess
 Operand_code source_to_operands (std::shared_ptr<Source_code> source_code);
-
 Byte_code operands_to_bytecode (std::shared_ptr<Operand_code> operand_code);
 
 #endif // VALIDATOR_H
