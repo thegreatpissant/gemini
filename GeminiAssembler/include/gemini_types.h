@@ -23,12 +23,12 @@
 #include <string>
 #include <vector>
 
-//  new type of typedef!!
+//  Type definintions
 using Label = std::string;
 using Register_value = u_int8_t;
 using Memory_loc = u_int8_t;
-using Value = u_int8_t;
-using Instruction_register = u_int32_t;
+using Value = int16_t;
+using Byte_code_segment = u_int32_t;
 
 //  new type of enums
 enum class Gemini_op : u_int8_t
@@ -73,41 +73,13 @@ struct Gemini_operand
     Label label;
 };
 
-//  Some system information
-struct Gemini_system_info
-{
-    Memory_loc A;
-    Memory_loc B;
-    Memory_loc Acc;
-    Memory_loc Zero;
-    Memory_loc One;
-    Memory_loc PC;
-    Memory_loc MAR;
-    Memory_loc MDR;
-    Memory_loc TEMP;
-    Instruction_register  IR;
-    Memory_loc CC;
-    Memory_loc CE;
-    Gemini_operand instruction;
-    Memory_loc instruction_index;
-    int jmp_stack_depth;
-
-};
 
 //  Abstract, Abstract, more custom types
 using Operand_code = std::vector<Gemini_operand>;
-using Byte_code_segment = u_int32_t;
 using Byte_code = std::vector<Byte_code_segment>;
 using Source_code = std::vector<std::string>;
 using Error_lines = std::vector<std::size_t>;
 
-//  Give me some info!!
-//  Functions to retrive human readable information on the defined types above
-//  TODO: Replace these with overloaded versions of the same function name
-// 'gemini_type_to_std_string'
-std::string gemini_op_to_std_string( Gemini_op gemini_op );
-std::string gemini_access_type_to_std_string( Gemini_access_type gemini_access_type );
-std::string gemini_register_value_to_std_string( Register_value memory );
-std::string gemini_operand_to_std_string( Gemini_operand gemini_operand );
 
 #endif // GEMINI_TYPES_H
+

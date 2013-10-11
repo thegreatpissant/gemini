@@ -25,21 +25,20 @@
 std::string gemini_instruction_register_to_std_string ( Instruction_register ir )
 {
     Instruction_register tmp = ir;
-    tmp &= 0xff000000;
+    tmp &= 0xFF000000;
     tmp >>= 24;
     Gemini_op gop = (Gemini_op)tmp;
     tmp = ir;
-    tmp &= 0x00ff0000;
+    tmp &= 0x00FF0000;
     tmp >>=16;
     Gemini_access_type gopt = (Gemini_access_type) tmp;
     tmp = ir;
-    tmp &= 0x000000ff;
+    tmp &= 0x0000FFFF;
     Value v = (Value)tmp;
 
     std::string operand_string =
             gemini_op_to_std_string ( gop ) + " " +
-            gemini_access_type_to_std_string( gopt ) + " "
-    +
+            gemini_access_type_to_std_string( gopt ) + " " +
             gemini_value_to_std_string( v );
 
     return operand_string;
@@ -52,7 +51,7 @@ std::string gemini_instruction_register_value_to_std_string(Instruction_register
          "0x" <<
          std::setfill ('0') << std::setw(sizeof(Instruction_register) * 2) <<
          std::hex <<
-         static_cast <u_int32_t> (ir);
+         static_cast <Instruction_register> (ir);
     return s.str();
 }
 
@@ -61,9 +60,9 @@ std::string gemini_register_value_to_std_string (Register_value rv)
     std::stringstream s;
     s <<
          "0x" <<
-         std::setfill ('0') << std::setw(sizeof (Value)*2) <<
+         std::setfill ('0') << std::setw(sizeof (Register_value)*2) <<
          std::hex <<
-         static_cast<u_int16_t>(rv);
+         static_cast<Register_value>(rv);
     return s.str();
 }
 
@@ -74,7 +73,7 @@ std::string gemini_value_to_std_string (Value value)
          "0x" <<
          std::setfill ('0') << std::setw(sizeof (Value)*2) <<
          std::hex <<
-         static_cast<u_int16_t>(value);
+         static_cast<Value>(value);
     return s.str();
 }
 

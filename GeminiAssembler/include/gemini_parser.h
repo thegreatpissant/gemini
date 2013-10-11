@@ -27,7 +27,6 @@ namespace Gemini_parser {
 
   // get opcode from the instruction string
 void get_opcode();
-
   //  Interpret what the instruction requires of the opcode
 void parse_opcode();
   //  Is the line empty
@@ -38,7 +37,6 @@ void strip_comment();
 bool memory_access();
   //  is this a value access?
 bool value_access();
-
   //  Parse the full instruction from opcode to value and return the operand.
 Gemini_operand * parse_instruction ( const std::string l);
 
