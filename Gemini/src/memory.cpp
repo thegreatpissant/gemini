@@ -23,6 +23,7 @@
 Memory::Memory()
 {
     main_memory.resize(256);
+    set_cache_type (Cache_type::DIRECT_ONEBLOCK);
 }
 
 /* Post and Request functions for main memory. When switching to
@@ -35,6 +36,7 @@ Register_value Memory::get_memory(Memory_loc memory_loc)
     if ( memory_loc < main_memory.size() )
         return main_memory[memory_loc];
     throw (std::out_of_range("CPU caused a Main Memory access violation"));
+
 }
 void Memory::set_memory(Memory_loc  memory_loc, Register_value value)
 {
@@ -44,7 +46,46 @@ void Memory::set_memory(Memory_loc  memory_loc, Register_value value)
         throw (std::out_of_range("CPU caused a Main Memory access violation"));
 }
 
+void Memory::set_cache_type(Cache_type ct)
+{
+    const int NUM_FRAMES = 8;
+    cache_type = ct;
+    switch (ct) {
+    case Cache_type::DIRECT_ONEBLOCK:
+        this->set_size = 1;
+        this->block_size = 1;
+        this->num_frames = NUM_FRAMES;
+        break;
+    case Cache_type::DIRECT_FOURBLOCK:
+        this->set_size = 1;
+        this->block_size = 4;
+        this->num_frames = NUM_FRAMES;
+        break;
+    case Cache_type::TWOWAYSET_ONEBLOCK:
+        this->set_size = 2;
+        this->block_size = 1;
+        this->num_frames = NUM_FRAMES;
+        break;
+    case Cache_type::TWOWAYSET_FOURBLOCK:
+        this->set_size = 2;
+        this->block_size = 4;
+        this->num_frames = NUM_FRAMES;
+        break;
+    }
+    this->flush_cache();
+}
+
 void Memory::tick()
 {
-  //  Unused for now...
+    //  Unused for now...
+}
+
+void Memory::flush_cache()
+{
+    this->cache.resize( num_frames );
+    for (auto &f : cache) {
+        f.resize(block_size);
+    }
+    hits = 0;
+    misses = 0;
 }

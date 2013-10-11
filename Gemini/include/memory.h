@@ -22,19 +22,45 @@
 /*
  * gemini memory: will handle the memory request of the CPU, in cache and system forms
  */
+
+enum class Cache_type {
+    DIRECT_ONEBLOCK,
+    DIRECT_FOURBLOCK,
+    TWOWAYSET_ONEBLOCK,
+    TWOWAYSET_FOURBLOCK
+};
+struct Cache_block {
+    u_int8_t tag;
+    u_int8_t flag;
+    int16_t  data;
+};
+using Cache_set = std::vector <Cache_block>;
+using Cache = std::vector <Cache_set>;
+
 class Memory
 {
 private:
-  //  Gemini system main memory
+    //  Gemini system main memory
     std::vector <Register_value> main_memory;
+
+    //  Gemini system cache
+    Cache_type cache_type;
+    int num_frames;
+    int set_size;
+    int block_size;
+    Cache cache;
+
 
 public:
     Memory();
     // Post and Request functions for main memory.
     Register_value get_memory (Memory_loc memory_loc);
     void set_memory(Memory_loc memory_loc, Register_value value);
-
+    void set_cache_type(Cache_type ct);
     void tick();  // Not used yet
+    void flush_cache ();
+    int hits;
+    int misses;
 };
 
 #endif // MEMORY_H

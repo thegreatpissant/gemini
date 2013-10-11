@@ -87,6 +87,8 @@ struct Gemini_system_info
     Register_value CE;
     Register_value instruction_index;
     int jmp_stack_depth;
+    int cache_hits;
+    int cache_misses;
 };
 
 //  More custom types

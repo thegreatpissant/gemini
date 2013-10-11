@@ -154,7 +154,7 @@
       <x>10</x>
       <y>138</y>
       <width>261</width>
-      <height>251</height>
+      <height>258</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -755,9 +755,22 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="label_45">
+         <property name="text">
+          <string>Cache Misses</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_46">
          <property name="text">
-          <string/>
+          <string>Cache Hits</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -779,9 +792,28 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_49">
+        <widget class="QLabel" name="cache_misses_label_value">
+         <property name="midLineWidth">
+          <number>0</number>
+         </property>
          <property name="text">
           <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="cache_hits_label_value">
+         <property name="midLineWidth">
+          <number>0</number>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>

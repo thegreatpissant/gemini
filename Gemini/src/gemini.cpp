@@ -65,6 +65,8 @@ void gemini::gemini_display_callback()
    ui->reg_CC   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CC )));
    ui->reg_CE   ->setText( QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.CE )));
    ui->jmp_stack_depth_label_value ->setText( (QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.jmp_stack_depth))));
+   ui->cache_hits_label_value ->setText(QString::fromStdString( std::to_string(gemini_system_info.cache_hits) ));
+   ui->cache_misses_label_value->setText(QString::fromStdString( std::to_string(gemini_system_info.cache_misses)));
 
     //  Set the Instruction index label
    ui->inst_label_index ->setText( QString::fromStdString(gemini_register_value_to_std_string(gemini_system_info.instruction_index)));
