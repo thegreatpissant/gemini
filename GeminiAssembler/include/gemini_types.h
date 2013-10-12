@@ -11,6 +11,17 @@
  * - Running of program instructions, non bytecode translation
  * - Detection of memory access errors, Alert user of failure
  * - This is the base of the project.
+ * *
+ * Project 2: Gemini Enhancements, Implement the following
+ * - Gemini Assembler: Create bytecode files from our Gemini assembly files
+ * - Support Loading of binary files into the Gemini Simulator
+ * - Add >=, <= Condition Jump checks
+ * - Add JMP and RET commands for functions
+ * - Add Cache implementation for One block Direct and 2 Way Set
+ * - Extra credit: SETHI and SETLO instruction to handle 32 bit numbers
+ * - Extra credit: Overflow on Multiplication and Divide
+ * - Extra credit: JMP and RET instructions to support 25 levels of recursion
+ * - Extra credit: Allow cache to support 4 memory block grabing at a time
  */
 
 /*
@@ -55,7 +66,15 @@ enum class Gemini_op : u_int8_t
     DIV   = 0x11,
     JMP   = 0x12,
     RET   = 0x13,
-    HLT   = 0x14
+    HLT   = 0x14,
+    SETHI = 0x15,
+    SETLO = 0x16,
+    ADDSL = 0x17,
+    SUBSL = 0X18,
+    MULSL = 0X19,
+    DIVSL = 0X1A,
+    LDHI  = 0x1B,
+    LDLO  = 0X1C
 };
 enum class Gemini_access_type : u_int8_t
 {

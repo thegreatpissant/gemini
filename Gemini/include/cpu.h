@@ -11,6 +11,17 @@
  * - Running of program instructions, non bytecode translation
  * - Detection of memory access errors, Alert user of failure
  * - This is the base of the project.
+ * *
+ * Project 2: Gemini Enhancements, Implement the following
+ * - Gemini Assembler: Create bytecode files from our Gemini assembly files
+ * - Support Loading of binary files into the Gemini Simulator
+ * - Add >=, <= Condition Jump checks
+ * - Add JMP and RET commands for functions
+ * - Add Cache implementation for One block Direct and 2 Way Set
+ * - Extra credit: SETHI and SETLO instruction to handle 32 bit numbers
+ * - Extra credit: Overflow on Multiplication and Divide
+ * - Extra credit: JMP and RET instructions to support 25 levels of recursion
+ * - Extra credit: Allow cache to support 4 memory block grabing at a time
  */
 
 #ifndef CPU_H
@@ -59,8 +70,17 @@ public:
 
     Instruction_register IR;
 
+    //  32 bit registers
+    int32_t SL0;
+    int32_t SL1;
+
     Register_value CC;
     Register_value CE;
+    Register_value OVF;
+
+    //  Overflow checking
+    int32_t mull;
+    int32_t divl;
 
     std::stack <Register_value> jmp_stack;
     const int JMP_STACK_MAX_DEPTH = 25;

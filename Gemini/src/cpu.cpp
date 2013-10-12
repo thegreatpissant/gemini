@@ -11,6 +11,17 @@
  * - Running of program instructions, non bytecode translation
  * - Detection of memory access errors, Alert user of failure
  * - This is the base of the project.
+ * *
+ * Project 2: Gemini Enhancements, Implement the following
+ * - Gemini Assembler: Create bytecode files from our Gemini assembly files
+ * - Support Loading of binary files into the Gemini Simulator
+ * - Add >=, <= Condition Jump checks
+ * - Add JMP and RET commands for functions
+ * - Add Cache implementation for One block Direct and 2 Way Set
+ * - Extra credit: SETHI and SETLO instruction to handle 32 bit numbers
+ * - Extra credit: Overflow on Multiplication and Divide
+ * - Extra credit: JMP and RET instructions to support 25 levels of recursion
+ * - Extra credit: Allow cache to support 4 memory block grabing at a time
  */
 
 /*
@@ -40,7 +51,9 @@ void CPU::execute_instruction( )
     }
     this->IR = ( *byte_code )[PC];
 
+    //  Temps to hold ...
     Value value;
+    Instruction_register i32;
 
     switch ( static_cast<Gemini_op>( get_op( IR ) ) )
     {
@@ -70,12 +83,14 @@ void CPU::execute_instruction( )
             value = get_value( IR );
         }
         Acc += value;
+        //  Set less then or equal
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -92,12 +107,14 @@ void CPU::execute_instruction( )
             value = get_value( IR );
         }
         Acc -= value;
+        //  Set less then or equal
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -113,13 +130,20 @@ void CPU::execute_instruction( )
         {
             value = get_value( IR );
         }
-        Acc *= value;
+        //  Overflow detection
+        mull = Acc;
+        mull *= value;
+        if ( ((mull & 0x7FFF0000) >> 16) != 0)
+            OVF = 1;
+        else OVF = 0;
+        Acc = (mull & 0xFFFF0000) >> 16;
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -135,13 +159,21 @@ void CPU::execute_instruction( )
         {
             value = get_value( IR );
         }
-        Acc /= value;
+        //  Overflow detection
+        divl = Acc;
+        divl /= value;
+        if ( ((divl & 0x7FFF0000) >> 16) != 0)
+            OVF = 1;
+        else OVF = 0;
+        Acc = (mull & 0xFFFF0000) >> 16;
+        //  Set less then or equal
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -158,12 +190,14 @@ void CPU::execute_instruction( )
             value = get_value( IR );
         }
         Acc &= value;
+        //  Set less then or equal
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -181,12 +215,14 @@ void CPU::execute_instruction( )
             value = get_value( IR );
         }
         Acc |= value;
+        //  Set less then or equal
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -195,12 +231,14 @@ void CPU::execute_instruction( )
         break;
     case Gemini_op::NOTA:
         Acc = ~Acc;
+        //  Set less then or equal
         if ( Acc > 0 )
             CC = 2;
         else if ( Acc < 0 )
             CC = 1;
         else
             CC = 0;
+        //  Set equal
         if ( Acc == 0 )
             CE = 1;
         else
@@ -223,7 +261,7 @@ void CPU::execute_instruction( )
         PC = get_value( IR );
         break;
     case Gemini_op::BE:
-        if ( CE == 0 )
+        if ( CE == 1 )
             PC = get_value( IR );
         else
             PC++;
@@ -258,7 +296,161 @@ void CPU::execute_instruction( )
         else
             PC++;
         break;
-
+    case Gemini_op::SETHI:
+        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        //  0 or 1 specifies what register we are going to be using
+        i32 = 0;
+        i32 |= this->Acc;
+        i32 <<= 16;
+        i32 |= 0x0000FFFF;
+        if (value == 0)
+            this->SL0 &= i32;
+        else if ( value == 1)
+            this->SL1 &= i32;
+        else
+            throw (std::out_of_range("CPU SETHI register access violation"));
+        PC++;
+        break;
+    case Gemini_op::SETLO:
+        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        i32 = 0xFFFF0000;
+        i32 |= this->Acc;
+        if (value == 0)
+            this->SL0 &= i32;
+        else if ( value == 1)
+            this->SL1 &= i32;
+        else
+            throw (std::out_of_range("CPU SETHLO register access violation"));
+        PC++;
+        break;
+    case Gemini_op::LDHI:
+        //  Load High part of either SL0 or SL1 into the accumilator
+        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        i32 = 0;
+        if (value == 0)
+            i32 = SL0;
+        else if ( value == 1)
+            i32 = SL1;
+        else
+            throw (std::out_of_range("CPU SETHLO register access violation"));
+        i32 >>= 16;
+        i32 &= 0x0000FFFF;
+        Acc = 0;
+        Acc |= i32;
+        PC++;
+        break;
+    case Gemini_op::LDLO:
+        //  Load the low part of either SL0 or SL1 into the accumilator
+        //  Load High part of either SL0 or SL1 into the accumilator
+        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        i32 = 0;
+        if (value == 0)
+            i32  = SL0;
+        else if ( value == 1)
+            i32 = SL1;
+        else
+            throw (std::out_of_range("CPU SETHLO register access violation"));
+        i32 &= 0x0000FFFF;
+        Acc = 0;
+        Acc |= i32;
+        PC++;
+        break;
+    case Gemini_op::ADDSL:
+        //  Add SL0 and SL1 and put the result in SL0
+        SL0 += SL1;
+        //  Set less then or equal
+        if ( SL0 > 0 )
+            CC = 2;
+        else if ( SL0 < 0 )
+            CC = 1;
+        else
+            CC = 0;
+        //  Set equal
+        if (  SL0 == 0 )
+            CE = 1;
+        else
+            CE = 0;
+        PC++;
+        break;
+    case Gemini_op::SUBSL:
+        //  Sub SL0 and SL1 and put the result in SL0
+        SL0 -= SL1;
+        //  Set less then or equal
+        if ( SL0 > 0 )
+            CC = 2;
+        else if ( SL0 < 0 )
+            CC = 1;
+        else
+            CC = 0;
+        //  Set equal
+        if (  SL0 == 0 )
+            CE = 1;
+        else
+            CE = 0;
+        PC++;
+        break;
+    case Gemini_op::MULSL:
+        //  Multiply SL0 and SL1 and put the result in SL0
+        SL0 *= SL1;
+        //  Set less then or equal
+        if ( SL0 > 0 )
+            CC = 2;
+        else if ( SL0 < 0 )
+            CC = 1;
+        else
+            CC = 0;
+        //  Set equal
+        if (  SL0 == 0 )
+            CE = 1;
+        else
+            CE = 0;
+        PC++;
+        break;
+    case Gemini_op::DIVSL:
+        //  Divide SL0 and SL1 and put the result in SL0
+        SL0 /= SL1;
+        //  Set less then or equal
+        if ( SL0 > 0 )
+            CC = 2;
+        else if ( SL0 < 0 )
+            CC = 1;
+        else
+            CC = 0;
+        //  Set equal
+        if (  SL0 == 0 )
+            CE = 1;
+        else
+            CE = 0;
+        PC++;
+        break;
     case Gemini_op::NOP:
         Acc += 0;
         PC++;

@@ -59,4 +59,9 @@ OTHER_FILES += \
     gemini_asm_files/test2.s \
     gemini_asm_files/test3.s \
     gemini_asm_files/test4.s \
-    gemini_asm_files/test5.s
+    gemini_asm_files/test5.s \
+    gemini_asm_files/t2.s \
+    gemini_asm_files/project2_test2.s \
+    gemini_asm_files/project2_test1.s \
+    gemini_asm_files/Test_1.s \
+    gemini_asm_files/Test_1.c

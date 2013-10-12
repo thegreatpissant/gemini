@@ -11,6 +11,17 @@
  * - Running of program instructions, non bytecode translation
  * - Detection of memory access errors, Alert user of failure
  * - This is the base of the project.
+ * *
+ * Project 2: Gemini Enhancements, Implement the following
+ * - Gemini Assembler: Create bytecode files from our Gemini assembly files
+ * - Support Loading of binary files into the Gemini Simulator
+ * - Add >=, <= Condition Jump checks
+ * - Add JMP and RET commands for functions
+ * - Add Cache implementation for One block Direct and 2 Way Set
+ * - Extra credit: SETHI and SETLO instruction to handle 32 bit numbers
+ * - Extra credit: Overflow on Multiplication and Divide
+ * - Extra credit: JMP and RET instructions to support 25 levels of recursion
+ * - Extra credit: Allow cache to support 4 memory block grabing at a time
  */
 
 /*
@@ -144,6 +155,22 @@ std::string gemini_op_to_std_string ( Gemini_op gemini_op )
         return std::string {"INVALID"};
     case Gemini_op::EMPTY:
         return std::string {"EMPTY"};
+    case Gemini_op::SETHI:
+        return std::string {"SETHI"};
+    case Gemini_op::SETLO:
+        return std::string {"SETLO"};
+    case Gemini_op::LDHI:
+        return std::string {"LDHI"};
+    case Gemini_op::LDLO:
+        return std::string {"LDLO"};
+    case Gemini_op::ADDSL:
+        return std::string {"ADDSL"};
+    case Gemini_op::SUBSL:
+        return std::string {"SUBSL"};
+    case Gemini_op::MULSL:
+        return std::string {"MULSL"};
+    case Gemini_op::DIVSL:
+        return std::string {"DIVSL"};
 }
     return std::string {"INVALID"};
 }
