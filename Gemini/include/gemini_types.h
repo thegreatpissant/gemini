@@ -72,6 +72,13 @@ enum class Gemini_access_type : Gemini_op_type
     VALUE  = 0x01
 };
 
+enum class Cache_type {
+    DIRECT_ONEBLOCK,
+    DIRECT_FOURBLOCK,
+    TWOWAYSET_ONEBLOCK,
+    TWOWAYSET_FOURBLOCK
+};
+
 //  Some system information
 struct Gemini_system_info
 {
@@ -91,6 +98,7 @@ struct Gemini_system_info
     int jmp_stack_depth;
     int cache_hits;
     int cache_misses;
+    Cache_type cache_type;
 };
 
 std::string gemini_op_to_std_string( Gemini_op gemini_op );
@@ -99,6 +107,7 @@ std::string gemini_register_value_to_std_string( Register_value rv );
 std::string gemini_instruction_register_to_std_string ( Instruction_register ir );
 std::string gemini_instruction_register_value_to_std_string ( Instruction_register ir );
 std::string gemini_value_to_std_string ( Value value );
+std::string gemini_cache_type_to_std_string ( Cache_type cache_type );
 
 
 #endif // GEMINI_TYPES_H

@@ -53,6 +53,8 @@ private slots:
   //  Handles the user initializing a clock cycle
     void on_pushButton_clicked();
 
+    void on_action_sel_triggered();
+
 private:
     Ui::gemini *ui;
 };

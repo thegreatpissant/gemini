@@ -52,7 +52,7 @@ public:
     Register_value Acc;
     Register_value Zero;
     Register_value One;
-    Register_value PC;
+    u_int16_t PC;
     Register_value MAR;
     Register_value MDR;
     Register_value TEMP;
@@ -77,6 +77,9 @@ public:
     
     //  Set internal handle to main memory section
     void set_memory (std::shared_ptr<Memory> m);
+
+    //  Set the cache mode
+    void set_cache_mode ( Cache_type cache_type );
 
     //  bring CPU to starting state
     void initialize ();

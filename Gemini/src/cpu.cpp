@@ -320,3 +320,8 @@ void CPU::set_memory( std::shared_ptr<Memory> mem )
 {
     memory = mem;
 }
+
+void CPU::set_cache_mode(Cache_type cache_type)
+{
+    memory->set_cache_type( cache_type );
+}

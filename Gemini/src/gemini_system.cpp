@@ -28,6 +28,7 @@ void Gemini_system::power_on()
 {
     power = true;
     memory = std::shared_ptr<Memory> (new Memory);
+    memory->set_cache_type( this->cache_type);
     cpu.set_memory( memory );
     cpu.load_byte_code ( byte_code );
     cpu.initialize();
@@ -45,6 +46,11 @@ void Gemini_system::power_off ()
 void Gemini_system::load_byte_code(std::shared_ptr<Byte_code> b_c)
 {
     byte_code = b_c;
+}
+
+void Gemini_system::set_cache_type(Cache_type ct)
+{
+    this->cache_type= ct;
 }
 
 //  External notification to cycle the clock
@@ -81,5 +87,6 @@ Gemini_system_info Gemini_system::get_system_info()
     tmp.jmp_stack_depth = cpu.jmp_stack_depth;
     tmp.cache_hits = memory->hits;
     tmp.cache_misses = memory->misses;
+    tmp.cache_type = this->cache_type;
     return tmp;
 }

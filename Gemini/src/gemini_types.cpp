@@ -87,9 +87,9 @@ std::string gemini_access_type_to_std_string ( Gemini_access_type gemini_access_
     case Gemini_access_type::VALUE :
         return std::string {"I"};
     case Gemini_access_type::NONE :
-        return std::string {"N"};
+        return std::string {"_"};
     }
-    return std::string {"N"};
+    return std::string {"_"};
 }
 
 
@@ -148,4 +148,20 @@ std::string gemini_op_to_std_string ( Gemini_op gemini_op )
     return std::string {"INVALID"};
 }
 
+
+
+std::string gemini_cache_type_to_std_string(Cache_type cache_type)
+{
+    switch (cache_type) {
+    case Cache_type::DIRECT_FOURBLOCK:
+        return std::string { "Direct Four Block" };
+    case Cache_type::DIRECT_ONEBLOCK:
+        return std::string { "Direct One Block" };
+    case Cache_type::TWOWAYSET_FOURBLOCK:
+        return std::string { "Two Way Set Four Block" };
+    case Cache_type::TWOWAYSET_ONEBLOCK:
+        return std::string { "Two Way Set One Block" };
+    }
+    return std::string {"INVALID"};
+}
 

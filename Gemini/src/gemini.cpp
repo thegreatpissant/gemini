@@ -25,6 +25,8 @@
 #include <QMessageBox>
 #include <QTextStream>
 #include <QString>
+#include <QStringList>
+#include <QInputDialog>
 
 #include <fstream>
 
@@ -67,6 +69,7 @@ void gemini::gemini_display_callback()
    ui->jmp_stack_depth_label_value ->setText( (QString::fromStdString( gemini_register_value_to_std_string(gemini_system_info.jmp_stack_depth))));
    ui->cache_hits_label_value ->setText(QString::fromStdString( std::to_string(gemini_system_info.cache_hits) ));
    ui->cache_misses_label_value->setText(QString::fromStdString( std::to_string(gemini_system_info.cache_misses)));
+   ui->cache_mode_label_value ->setText (QString::fromStdString( gemini_cache_type_to_std_string(gemini_system_info.cache_type)));
 
     //  Set the Instruction index label
    ui->inst_label_index ->setText( QString::fromStdString(gemini_register_value_to_std_string(gemini_system_info.instruction_index)));
@@ -111,6 +114,32 @@ void gemini::on_actionLoad_triggered()
     //  Send pseudo Byte_code to gemini system
     gemini_system.load_byte_code(byte_code);
 
+    //  Promp user to select a cache type
+    QString dob = "Direct One Block", dfb = "Direct Four Block",
+            sob = "Two Way Set One Block", sfb = "Two Way Set Four Block";
+    QString sact = "Select a Cache Type";
+    QStringList list;
+    list << dob << dfb << sob << sfb;
+    QString text = QInputDialog::getItem(this, sact, sact , list, 0, false);
+
+    //  Set the cache mode
+    if (text == dob)
+    {
+        gemini_system.set_cache_type(Cache_type::DIRECT_ONEBLOCK);
+    }
+    else if (text == dfb)
+    {
+        gemini_system.set_cache_type(Cache_type::DIRECT_FOURBLOCK);
+    }
+    else if (text == sob)
+    {
+        gemini_system.set_cache_type(Cache_type::TWOWAYSET_ONEBLOCK);
+    }
+    else if (text == sfb)
+    {
+        gemini_system.set_cache_type(Cache_type::TWOWAYSET_FOURBLOCK);
+    }
+
     //  Set CPU to ready
     gemini_system.power_on();
 
@@ -149,4 +178,9 @@ void gemini::on_pushButton_clicked()
 void gemini::set_cpu_error ()
 {
     ui->pushButton->setEnabled(false);
+}
+
+void gemini::on_action_sel_triggered()
+{
+
 }

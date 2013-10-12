@@ -33,6 +33,7 @@ private:
     std::shared_ptr<Memory> memory;
     std::shared_ptr<Byte_code> byte_code;
     bool power;
+    Cache_type cache_type;
 
 public:
     Gemini_system();
@@ -40,6 +41,8 @@ public:
     void power_off();
     //  send bytecode into the system
     void load_byte_code (std::shared_ptr<Byte_code> b_c );
+    //  Set the cache mode
+    void set_cache_type( Cache_type ct);
     //  external notification to cycle the clock
     void cycle_clock ();
     //  A would be function pointer to the current ticking component
