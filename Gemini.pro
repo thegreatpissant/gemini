@@ -64,4 +64,7 @@ OTHER_FILES += \
     gemini_asm_files/project2_test2.s \
     gemini_asm_files/project2_test1.s \
     gemini_asm_files/Test_1.s \
-    gemini_asm_files/Test_1.c
+    gemini_asm_files/Test_1.c \
+    gemini_asm_files/overflow.s \
+    gemini_asm_files/recursion.s \
+    gemini_asm_files/sethi_sethl.s
