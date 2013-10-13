@@ -88,6 +88,13 @@ std::string gemini_value_to_std_string (Value value)
     return s.str();
 }
 
+std::string gemini_instruction_count_to_std_string(std::size_t instruction_count)
+{
+    std::stringstream s;
+    s << instruction_count;
+    return s.str();
+}
+
 //  An include default translation of a Gemini_access_type to a std::string
 std::string gemini_access_type_to_std_string ( Gemini_access_type gemini_access_type )
 {
@@ -191,4 +198,5 @@ std::string gemini_cache_type_to_std_string(Cache_type cache_type)
     }
     return std::string {"INVALID"};
 }
+
 

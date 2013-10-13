@@ -51,6 +51,8 @@ void CPU::execute_instruction( )
     }
     this->IR = ( *byte_code )[PC];
 
+    instruction_count++;
+
     //  Temps to hold ...
     Value value;
     Instruction_register i32;
@@ -504,9 +506,15 @@ void CPU::stop( )
     PC = byte_code->size( );
 }
 
+bool CPU::done()
+{
+    return ( PC == byte_code->size () );
+}
+
 void CPU::load_byte_code( std::shared_ptr<Byte_code> bc )
 {
     byte_code = bc;
+    instruction_count = 0;
 }
 
 void CPU::set_memory( std::shared_ptr<Memory> mem )

@@ -88,6 +88,7 @@ public:
 
     Register_value instruction_index;  //  not sure what the instruction_index was for
 
+    std::size_t instruction_count;
 
     //  External action to initiate a clock tick
     void tick();
@@ -106,6 +107,9 @@ public:
 
     //  Stop the cpu from running
     void stop();
+
+    //  Has the program finished
+    bool done();
 };
 
 #endif // CPU_H

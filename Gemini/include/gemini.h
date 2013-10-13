@@ -66,6 +66,10 @@ private slots:
 
     void on_action_sel_triggered();
 
+    void on_pushButton_runall_clicked();
+
+    void enable_user_interaction (bool e);
+
 private:
     Ui::gemini *ui;
 };

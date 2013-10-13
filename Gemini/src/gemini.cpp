@@ -107,6 +107,9 @@ void gemini::gemini_display_callback( )
     //  Set the Instruction index label
     ui->inst_label_index->setText( QString::fromStdString(
         gemini_register_value_to_std_string( gemini_system_info.instruction_index ) ) );
+    ui->inst_count_value->setText(
+        QString::fromStdString(gemini_instruction_count_to_std_string(gemini_system_info.instruction_count)));
+
 }
 
 /*
@@ -119,12 +122,14 @@ void gemini::on_actionQuit_triggered( )
 
 void gemini::on_actionLoad_triggered( )
 {
-    ui->pushButton->setEnabled( false );
+    this->enable_user_interaction( false );
     QString file_name = QFileDialog::getOpenFileName( this, tr( "Open File" ), QString( ),
                                                       tr( "Gemini Files (*.*)" ) );
 
     if ( file_name.isEmpty( ) )
         return;
+
+    this->ui->label_file_name ->setText(file_name);
 
     std::ifstream file( file_name.toStdString( ), std::ios::binary );
     if ( !file )
@@ -175,7 +180,7 @@ void gemini::on_actionLoad_triggered( )
     gemini_system.power_on( );
 
     //  Enable the 'next' button
-    ui->pushButton->setEnabled( true );
+    this->enable_user_interaction( true );
 
     //  Update the display to show the current cpu state
     this->gemini_display_callback( );
@@ -191,6 +196,8 @@ void gemini::on_pushButton_clicked( )
     {
         gemini_system.cycle_clock( );
         this->gemini_display_callback( );
+        if (gemini_system.done())
+            this->enable_user_interaction( false );
     }
     catch ( std::out_of_range excp )
     {
@@ -210,9 +217,39 @@ void gemini::on_pushButton_clicked( )
  */
 void gemini::set_cpu_error( )
 {
-    ui->pushButton->setEnabled( false );
+    this->enable_user_interaction( false );
 }
 
 void gemini::on_action_sel_triggered( )
 {
 }
+
+void gemini::on_pushButton_runall_clicked()
+{
+    //  Make sure to check for a buffer overflow
+    try
+    {
+        while (gemini_system.done() == false)
+        {
+            gemini_system.cycle_clock( );
+        }
+    }
+    catch ( std::out_of_range excp )
+    {
+        QMessageBox *mb = new QMessageBox( this );
+        mb->setText( QString::fromStdString( excp.what( ) ) );
+        mb->show( ); // Display there was a buffer overflow
+        //  invoke an error state
+        set_cpu_error( );
+        //  shutdown the system
+        gemini_system.power_off( );
+    }
+    this->gemini_display_callback( );
+    this->enable_user_interaction( false );
+}
+
+void gemini::enable_user_interaction( bool e)
+{
+    ui->pushButton->setEnabled(e);
+    ui->pushButton_runall->setEnabled(e);
+ }

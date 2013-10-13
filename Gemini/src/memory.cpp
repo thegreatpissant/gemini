@@ -37,11 +37,6 @@ Memory::Memory()
     main_memory.resize(256);
 }
 
-/* Post and Request functions for main memory. When switching to
- * bytecode this unsigned vs signed conversion for comparison will go
- * away.  For now the wraparound should be safe enough to only check
- * if the requested value is greater then the size of memory.
- */
 Register_value Memory::get_memory( Memory_loc memory_loc )
 {
     if ( memory_loc >= main_memory.size() )
@@ -59,9 +54,57 @@ Register_value Memory::get_memory( Memory_loc memory_loc )
     }
 }
 
+void Memory::set_memory(Memory_loc  memory_loc, Register_value value)
+{
+    if ( memory_loc  >= main_memory.size())
+        throw (std::out_of_range("CPU caused a Main Memory access violation"));
+
+    if ( search_cache(memory_loc) )
+    {   //  Hit
+        this->hits++;
+        write_to_cache ( value );
+    }
+    else
+    {   //  Miss
+        this->misses++;
+        this->main_memory[memory_loc] = value;
+        get_from_memory (memory_loc);
+    }
+}
+
+bool Memory::search_cache (Memory_loc ml)
+{
+    //  Map the lines' chache set offset into the appropriate cache set.
+    //  The byte_block in memory this is in
+    u_int16_t byte_block = ml / block_size;
+    //  The set in cache this is in
+    u_int16_t cache_set  = byte_block % (cache_size/cache_set_size);
+    //  Where in cache this set logically begins
+    u_int16_t cache_set_begin = cache_set * cache_set_size;
+    //  Offset into a block this memory address will reside
+    u_int16_t block_offset = ml % block_size;
+    //  Search the cache set
+    for ( auto i = 0; i < cache_set_size; i++)
+    {
+        if ( cache[cache_set_begin + i].valid && ((ml - block_offset) == cache[cache_set_begin + i].address) )
+        {  //  Hit
+            hit_line = cache_set_begin + i;
+            hit_offset = block_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
 Register_value Memory::get_from_cache (  )
 {
     return cache[hit_line].data[hit_offset];
+}
+
+void Memory::write_to_cache ( Register_value value )
+{
+    cache[hit_line].data[hit_offset] = value;
+    cache[hit_line].dirty = true;
 }
 
 Register_value Memory::get_from_memory ( Memory_loc memory_loc )
@@ -80,81 +123,40 @@ Register_value Memory::get_from_memory ( Memory_loc memory_loc )
         replace_line = rand() % cache_set_size;
     }
 
-    //  Map the lines chache set offset into the appropriate cache set.
+    //  Map the lines' chache set offset into the appropriate cache set.
+    //  The byte_block in memory this is in
     u_int16_t byte_block = memory_loc / block_size;
+    //  The set in cache this is in
     u_int16_t cache_set = byte_block % (cache_size / cache_set_size );
-    u_int16_t offset = memory_loc % block_size;
-    replace_line = replace_line + cache_set;
+    //  Where in cache this cache set logically begins
+    u_int16_t cache_set_loc = cache_set * cache_set_size;
+    //  Which line in the cache set we replace
+    replace_line = replace_line + cache_set_loc;
     //  Fill cache line with new data
     //  First if its dirty write it to memory
-    if ( this->cache[replace_line].dirty )
+    if ( this->cache[replace_line].valid && this->cache[replace_line].dirty )
     {  //  Write modified cache data block to memory
         for (auto i = 0; i < this->block_size; i++)
-        {
+        {   //  Use the cache lines referenced memory for writing it back
             this->main_memory[this->cache[replace_line].address + i] = this->cache[replace_line].data[i];
         }
     }
+    // Prepare the new block
+    u_int16_t block_offset = memory_loc % block_size;
+    this->cache[replace_line].address = memory_loc - block_offset;
     //  Fill with new data
     this->cache[replace_line].valid = true;
     this->cache[replace_line].dirty = false;
+    //  Offset into the block this memory address will reside
     //  Grab the full block size
     for (auto i = 0; i < block_size; i++)
     {
-        this->cache[replace_line].data[i] = this->main_memory[memory_loc - offset + i];
+        this->cache[replace_line].data[i] = this->main_memory[memory_loc - block_offset + i];
     }
     //  Oh yeah, Return data queried for
-    return cache[replace_line].data[offset];
+    return cache[replace_line].data[block_offset];
 }
 
-
-bool Memory::search_cache (Memory_loc ml)
-{
-    //  The byte_block in memory this is in
-    u_int16_t byte_block = ml / block_size;
-    //  The set in cache this is in
-    u_int16_t cache_set  = byte_block % (cache_size/cache_set_size);
-    //  Where in cache this set logically begins
-    u_int16_t cache_set_begin = cache_set * cache_set_size;
-    //  Offset into a block this memory address will reside
-    u_int16_t offset = ml % block_size;
-    //  Search the cache set
-    for ( auto i = 0; i < cache_set_size; i++, cache_set_begin++)
-    {
-        if ( cache[cache_set_begin].valid && (ml - offset) == cache[cache_set_begin].address )
-        {  //  Hit
-            hit_line = cache_set_begin;
-            hit_offset = offset;
-            return true;
-        }
-    }
-    return false;
-}
-
-void Memory::set_memory(Memory_loc  memory_loc, Register_value value)
-{
-    if ( memory_loc  < main_memory.size())
-        main_memory[memory_loc] = value;
-    else
-        throw (std::out_of_range("CPU caused a Main Memory access violation"));
-
-    if ( search_cache(memory_loc) )
-    {   //  Hit
-        this->hits++;
-        write_to_cache ( value );
-    }
-    else
-    {   //  Miss
-        this->misses++;
-        this->main_memory[memory_loc] = value;
-        get_from_memory (memory_loc);
-    }
-}
-
-void Memory::write_to_cache ( Register_value value )
-{
-    cache[hit_line].data[hit_offset] = value;
-    cache[hit_line].dirty = true;
-}
 void Memory::set_cache_type(Cache_type ct)
 {
     cache_size = 8;

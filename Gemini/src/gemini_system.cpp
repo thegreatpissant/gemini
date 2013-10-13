@@ -78,6 +78,11 @@ void Gemini_system::tick ()
     cpu.tick ();
 }
 
+bool Gemini_system::done()
+{
+    return cpu.done();
+}
+
 //  Retrive some information about the system, for now it is the CPU registers
 Gemini_system_info Gemini_system::get_system_info()
 {
@@ -103,5 +108,6 @@ Gemini_system_info Gemini_system::get_system_info()
     tmp.cache_type = this->cache_type;
     tmp.SL0 = cpu.SL0;
     tmp.SL1 = cpu.SL1;
+    tmp.instruction_count = cpu.instruction_count;
     return tmp;
 }

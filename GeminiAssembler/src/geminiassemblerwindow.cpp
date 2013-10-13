@@ -98,7 +98,8 @@ void GeminiAssemblerWindow::on_pushButton_asmfile_clicked( )
 {
     QString file_name = QFileDialog::getOpenFileName( this, tr( "Open File" ), QString( ),
                                                       tr( "Gemini Files (*.*)" ) );
-
+    if (file_name.isEmpty())
+        return;
     model->set_assembly_file_name( file_name.toStdString( ) );
 
     if (!this->control->test_and_read_assembly_file())

@@ -121,6 +121,7 @@ struct Gemini_system_info
     int cache_hits;
     int cache_misses;
     Cache_type cache_type;
+    std::size_t instruction_count;
 };
 
 std::string gemini_op_to_std_string( Gemini_op gemini_op );
@@ -130,6 +131,7 @@ std::string gemini_instruction_register_to_std_string ( Instruction_register ir 
 std::string gemini_instruction_register_value_to_std_string ( Instruction_register ir );
 std::string gemini_value_to_std_string ( Value value );
 std::string gemini_cache_type_to_std_string ( Cache_type cache_type );
+std::string gemini_instruction_count_to_std_string (std::size_t instruction_count );
 
 
 #endif // GEMINI_TYPES_H
