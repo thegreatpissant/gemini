@@ -72,15 +72,15 @@ void strip_whitespace ( )
 bool get_value ( Value &value )
 {
     //  Need some sort of default 
-    value = -1;
+    value = 0;
 
     //  As per http://www.kumobius.com/2013/08/c-string-to-int/
     //  With a trailing whitespace test.
     try
     {
         std::size_t last_char;
-        value = std::stoi(line, &last_char, 10);
-        last_char = line.find_first_not_of("1234567890");
+        value |= std::stoi(line, &last_char, 10);
+        last_char = static_cast<int16_t> (line.find_first_not_of("-1234567890"));
         if ( last_char == std::string::npos )
             line = " ";
         else
@@ -263,6 +263,14 @@ void get_opcode ( )
     else if (opcode == "divsl")
     {
         operand->op = Gemini_op::DIVSL;
+    }
+    else if (opcode == "ldhi")
+    {
+        operand->op = Gemini_op::LDHI;
+    }
+    else if (opcode == "ldlo")
+    {
+        operand->op = Gemini_op::LDLO;
     }
     else if (opcode == "nop")
     {

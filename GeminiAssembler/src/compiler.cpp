@@ -73,7 +73,11 @@ static Byte_code_segment to_byte_code_segment (Gemini_operand gop)
     byte_code_segment |= static_cast<u_int8_t>(gop.access_type);
     //  Assign the value
     byte_code_segment <<= 16;
-    byte_code_segment |= gop.value;
+//    Byte_code_segment t;
+//    t = 0;
+//    t &= gop.value;
+//    byte_code_segment |= t;
+    byte_code_segment |= static_cast<int16_t>(gop.value);
     return byte_code_segment;
 }
 

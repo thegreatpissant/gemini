@@ -123,7 +123,8 @@ bool GeminiAssemblerControl::convert_assembly_to_bytecode()
     //  Link in the labels
     for (auto &oc : *operand_code)
     {
-        if (oc.op == Gemini_op::BA || oc.op == Gemini_op::BE || oc.op == Gemini_op::BG || oc.op == Gemini_op::BL)
+        if (oc.op == Gemini_op::BA || oc.op == Gemini_op::BE || oc.op == Gemini_op::BG || oc.op == Gemini_op::BL ||
+                oc.op == Gemini_op::BGE || oc.op == Gemini_op::BLE || oc.op == Gemini_op::BNE || oc.op == Gemini_op::JMP)
         {
             if (label_table.find(oc.label) == label_table.end())
             {

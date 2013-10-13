@@ -309,11 +309,11 @@ void CPU::execute_instruction( )
         i32 = 0;
         i32 |= this->Acc;
         i32 <<= 16;
-        i32 |= 0x0000FFFF;
+        i32 &= 0xFFFF0000;
         if (value == 0)
-            this->SL0 &= i32;
+            this->SL0 |= i32;
         else if ( value == 1)
-            this->SL1 &= i32;
+            this->SL1 |= i32;
         else
             throw (std::out_of_range("CPU SETHI register access violation"));
         PC++;
@@ -327,12 +327,13 @@ void CPU::execute_instruction( )
         {
             value = get_value( IR );
         }
-        i32 = 0xFFFF0000;
+        i32 = 0x00000000;
         i32 |= this->Acc;
+        i32 &= 0x0000FFFF;
         if (value == 0)
-            this->SL0 &= i32;
+            this->SL0 |= i32;
         else if ( value == 1)
-            this->SL1 &= i32;
+            this->SL1 |= i32;
         else
             throw (std::out_of_range("CPU SETHLO register access violation"));
         PC++;
@@ -347,7 +348,7 @@ void CPU::execute_instruction( )
         {
             value = get_value( IR );
         }
-        i32 = 0;
+        i32 = 0x00000000;
         if (value == 0)
             i32 = SL0;
         else if ( value == 1)
@@ -356,7 +357,7 @@ void CPU::execute_instruction( )
             throw (std::out_of_range("CPU SETHLO register access violation"));
         i32 >>= 16;
         i32 &= 0x0000FFFF;
-        Acc = 0;
+        Acc = 0x00000000;
         Acc |= i32;
         PC++;
         break;
@@ -379,7 +380,7 @@ void CPU::execute_instruction( )
         else
             throw (std::out_of_range("CPU SETHLO register access violation"));
         i32 &= 0x0000FFFF;
-        Acc = 0;
+        Acc = 0x00000000;
         Acc |= i32;
         PC++;
         break;
