@@ -104,9 +104,6 @@ void gemini::gemini_display_callback( )
         QString::fromStdString( std::to_string( gemini_system_info.cache_misses ) ) );
     ui->cache_mode_label_value->setText( QString::fromStdString(
         gemini_cache_type_to_std_string( gemini_system_info.cache_type ) ) );
-    //  Set the Instruction index label
-    ui->inst_label_index->setText( QString::fromStdString(
-        gemini_register_value_to_std_string( gemini_system_info.instruction_index ) ) );
     ui->inst_count_value->setText(
         QString::fromStdString(gemini_instruction_count_to_std_string(gemini_system_info.instruction_count)));
 

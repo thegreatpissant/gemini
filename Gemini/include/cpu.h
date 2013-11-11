@@ -33,7 +33,6 @@
 #include <memory>
 #include <stack>
 
-
 /*
  *  Gemini system CPU: Performs operations and generates clock signals.
  *
@@ -71,23 +70,23 @@ public:
     Instruction_register IR;
 
     //  32 bit registers
-    int32_t SL0;
     int32_t SL1;
-
-    Register_value CC;
-    Register_value CE;
-    Register_value OVF;
-
-    //  Overflow checking
+    int32_t SL0;
     int32_t mull;
     int32_t divl;
 
+    Register_value CC;
+    Register_value CE;
+
+    //  Overflow checking
+    Register_value OVF;
+
+    //  Jump Stack
     std::stack <Register_value> jmp_stack;
     const int JMP_STACK_MAX_DEPTH = 25;
     int jmp_stack_depth;
 
-    Register_value instruction_index;  //  not sure what the instruction_index was for
-
+    //  Stats
     std::size_t instruction_count;
 
     //  External action to initiate a clock tick
@@ -105,8 +104,8 @@ public:
     //  bring CPU to starting state
     void initialize ();
 
-    //  Stop the cpu from running
-    void stop();
+    //  Halt the cpu
+    void halt();
 
     //  Has the program finished
     bool done();

@@ -116,7 +116,6 @@ struct Gemini_system_info
     Register_value OVF;
     int32_t SL0;
     int32_t SL1;
-    Register_value instruction_index;
     int jmp_stack_depth;
     int cache_hits;
     int cache_misses;

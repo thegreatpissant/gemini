@@ -50,7 +50,7 @@ void Gemini_system::power_on()
 //  Turn it off
 void Gemini_system::power_off ()
 {
-    cpu.stop ();
+    cpu.halt ();
     power = false;
 }
 
@@ -101,7 +101,6 @@ Gemini_system_info Gemini_system::get_system_info()
     tmp.CC = cpu.CC;
     tmp.CE = cpu.CE;
     tmp.OVF = cpu.OVF;
-    tmp.instruction_index = cpu.instruction_index;
     tmp.jmp_stack_depth = cpu.jmp_stack_depth;
     tmp.cache_hits = memory->hits;
     tmp.cache_misses = memory->misses;

@@ -22,10 +22,17 @@
  * - Extra credit: Overflow on Multiplication and Divide
  * - Extra credit: JMP and RET instructions to support 25 levels of recursion
  * - Extra credit: Allow cache to support 4 memory block grabing at a time
+ * *
+ * Project 3: Gemini Pipelining, Implement the following
+ * - Part 1: A pipelining architecture within the CPU
+ *   Consists of [Fetch|Decode|eXecute|Memory] stages.
+ *   Seperate each stage into its own thread
+ * - Part 2: Branch prediction;
+ *   Based on past results predict future branching
  */
 
 /*
- *  Gemini system CPU: Performs operations and generates clock signals.
+ *  Gemini system CPU: Performs operations.
  *
  */
 
@@ -45,45 +52,206 @@ void CPU::tick( )
 
 void CPU::execute_instruction( )
 {
+    /* --  FETCH  BEGIN -- */
     if ( PC >= ( *byte_code ).size( ) )
     {
         return;
     }
     this->IR = ( *byte_code )[PC];
-
     instruction_count++;
+    /* --  FETCH END -- */
 
-    //  Temps to hold ...
+    /* --  DECODE BEGIN -- */
+    Gemini_access_type access_type = get_access_type( IR );
+    Gemini_op op = static_cast<Gemini_op>(get_op( IR ));
+    //  Temps to hold a/an ...
     Value value;
     Instruction_register i32;
-
-    switch ( static_cast<Gemini_op>( get_op( IR ) ) )
+    switch ( op )
     {
     case Gemini_op::LDA:
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
+        if ( access_type == Gemini_access_type::MEMORY )
         {
             value = memory->get_memory( get_value( IR ) );
         }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
+        else if ( access_type == Gemini_access_type::VALUE )
         {
             value = get_value( IR );
         }
+        break;
+    case Gemini_op::STA:
+        value = get_value( IR );
+        break;
+    case Gemini_op::ADD:
+        if ( access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::SUB:
+        if ( access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::MUL:
+        if ( access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::DIV:
+        if ( access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::AND:
+        if ( access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::OR:
+        if ( access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if ( access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::NOTA:
+        break;
+    case Gemini_op::JMP:
+        break;
+    case Gemini_op::RET:
+        break;
+    case Gemini_op::BA:
+        value = get_value( IR );
+        break;
+    case Gemini_op::BE:
+        //  @@TODO BRANCHPREDICTION
+//        value =
+        break;
+    case Gemini_op::BL:
+        //  @@TODO BRANCHPREDICTION
+//        value =
+        break;
+    case Gemini_op::BG:
+        //  @@TODO BRANCHPREDICTION
+//        value =
+        break;
+    case Gemini_op::BGE:
+        //  @@TODO BRANCHPREDICTION
+//        value =
+        break;
+    case Gemini_op::BLE:
+        //  @@TODO BRANCHPREDICTION
+//        value =
+        break;
+    case Gemini_op::BNE:
+        //  @@TODO BRANCHPREDICTION
+//        value =
+        break;
+    case Gemini_op::SETHI:
+        if (access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::SETLO:
+        if (access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::LDHI:
+        //  Load High part of either SL0 or SL1 into the accumilator
+        if (access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::LDLO:
+        //  Load the low part of either SL0 or SL1 into the accumilator
+        //  Load High part of either SL0 or SL1 into the accumilator
+        if (access_type == Gemini_access_type::MEMORY )
+        {
+            value = memory->get_memory( get_value( IR ) );
+        }
+        else if (access_type == Gemini_access_type::VALUE )
+        {
+            value = get_value( IR );
+        }
+        break;
+    case Gemini_op::ADDSL:
+        break;
+    case Gemini_op::SUBSL:
+        break;
+    case Gemini_op::MULSL:
+        break;
+    case Gemini_op::DIVSL:
+        break;
+    case Gemini_op::NOP:
+        //  @@TODO  Are we passing a NOP signal down the line
+        break;
+    case Gemini_op::HLT:
+        break;
+    case Gemini_op::LABEL:
+        break;
+    case Gemini_op::EMPTY:
+        break;
+    case Gemini_op::INVALID:
+        break;
+    }
+    /* --  DECODE END   -- */
+
+
+    /* --  EXECUTE BEGIN -- */
+    switch ( op )
+    {
+    case Gemini_op::LDA:
         Acc = value;
         PC++;
         break;
     case Gemini_op::STA:
-        memory->set_memory( get_value( IR ), Acc );
         PC++;
         break;
     case Gemini_op::ADD:
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         Acc += value;
         //  Set less then or equal
         if ( Acc > 0 )
@@ -100,14 +268,6 @@ void CPU::execute_instruction( )
         PC++;
         break;
     case Gemini_op::SUB:
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         Acc -= value;
         //  Set less then or equal
         if ( Acc > 0 )
@@ -124,14 +284,6 @@ void CPU::execute_instruction( )
         PC++;
         break;
     case Gemini_op::MUL:
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         //  Overflow detection
         mull = Acc;
         mull *= value;
@@ -153,14 +305,6 @@ void CPU::execute_instruction( )
         PC++;
         break;
     case Gemini_op::DIV:
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         //  Overflow detection
         divl = Acc;
         divl /= value;
@@ -183,14 +327,6 @@ void CPU::execute_instruction( )
         PC++;
         break;
     case Gemini_op::AND:
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         Acc &= value;
         //  Set less then or equal
         if ( Acc > 0 )
@@ -207,15 +343,6 @@ void CPU::execute_instruction( )
         PC++;
         break;
     case Gemini_op::OR:
-
-        if ( get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         Acc |= value;
         //  Set less then or equal
         if ( Acc > 0 )
@@ -299,14 +426,6 @@ void CPU::execute_instruction( )
             PC++;
         break;
     case Gemini_op::SETHI:
-        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         //  0 or 1 specifies what register we are going to be using
         i32 = 0;
         i32 |= this->Acc;
@@ -321,14 +440,6 @@ void CPU::execute_instruction( )
         PC++;
         break;
     case Gemini_op::SETLO:
-        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         i32 = 0x00000000;
         i32 |= this->Acc;
         i32 &= 0x0000FFFF;
@@ -342,14 +453,6 @@ void CPU::execute_instruction( )
         break;
     case Gemini_op::LDHI:
         //  Load High part of either SL0 or SL1 into the accumilator
-        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         i32 = 0x00000000;
         if (value == 0)
             i32 = SL0;
@@ -366,14 +469,6 @@ void CPU::execute_instruction( )
     case Gemini_op::LDLO:
         //  Load the low part of either SL0 or SL1 into the accumilator
         //  Load High part of either SL0 or SL1 into the accumilator
-        if (get_access_type( IR ) == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (get_access_type( IR ) == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
         i32 = 0;
         if (value == 0)
             i32  = SL0;
@@ -468,6 +563,48 @@ void CPU::execute_instruction( )
     case Gemini_op::INVALID:
         break;
     }
+    /* --  EXECUTE END   -- */
+
+
+    /* --  WRITEBACK BEGIN -- */
+    switch ( op )
+    {
+    case Gemini_op::STA:
+        memory->set_memory( value, Acc );
+        break;
+    case Gemini_op::LDA:
+    case Gemini_op::ADD:
+    case Gemini_op::SUB:
+    case Gemini_op::MUL:
+    case Gemini_op::DIV:
+    case Gemini_op::AND:
+    case Gemini_op::OR:
+    case Gemini_op::NOTA:
+    case Gemini_op::JMP:
+    case Gemini_op::RET:
+    case Gemini_op::BA:
+    case Gemini_op::BE:
+    case Gemini_op::BL:
+    case Gemini_op::BG:
+    case Gemini_op::BGE:
+    case Gemini_op::BLE:
+    case Gemini_op::BNE:
+    case Gemini_op::SETHI:
+    case Gemini_op::SETLO:
+    case Gemini_op::LDHI:
+    case Gemini_op::LDLO:
+    case Gemini_op::ADDSL:
+    case Gemini_op::SUBSL:
+    case Gemini_op::MULSL:
+    case Gemini_op::DIVSL:
+    case Gemini_op::NOP:
+    case Gemini_op::HLT:
+    case Gemini_op::LABEL:
+    case Gemini_op::EMPTY:
+    case Gemini_op::INVALID:
+        break;
+    }
+    /* --  WRITEBACK END   -- */
 }
 
 Register_value CPU::get_value( Instruction_register ir )
@@ -497,11 +634,11 @@ void CPU::initialize( )
 {
     Zero = 0;
     One = 1;
-    PC = instruction_index = 0;
+    PC = 0;
     IR = ( *byte_code )[PC];
 }
 
-void CPU::stop( )
+void CPU::halt( )
 {
     PC = byte_code->size( );
 }
