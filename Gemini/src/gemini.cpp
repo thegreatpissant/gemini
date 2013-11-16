@@ -53,61 +53,6 @@ gemini::~gemini( )
     delete ui;
 }
 
-/*
- * Grabs the gemini system info
- * Sets the GUI lables appropriatly
- */
-void gemini::gemini_display_callback( )
-{
-    //  Get the system info from Gemini
-    Gemini_system_info gemini_system_info = gemini_system.get_system_info( );
-    //  Set all the registers information
-    ui->reg_A->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.A ) ) );
-    ui->reg_B->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.B ) ) );
-    ui->reg_Acc->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.Acc ) ) );
-    ui->reg_Zero->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.Zero ) ) );
-    ui->reg_One->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.One ) ) );
-    ui->reg_PC->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.PC ) ) );
-    ui->reg_MAR->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.MAR ) ) );
-    ui->reg_MDR->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.MDR ) ) );
-    ui->reg_TEMP->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.TEMP ) ) );
-    ui->reg_SL0->setText(
-            QString::fromStdString( gemini_instruction_register_value_to_std_string(gemini_system_info.SL0)));
-    ui->reg_SL1->setText(
-            QString::fromStdString( gemini_instruction_register_value_to_std_string(gemini_system_info.SL1)));
-    ui->reg_IR->setText(
-        QString::fromStdString( gemini_instruction_register_value_to_std_string( gemini_system_info.IR ) ) );
-    ui->inst_label_value->setText(
-        QString::fromStdString( gemini_instruction_register_to_std_string( gemini_system_info.IR ) ) );
-    ui->reg_CC->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.CC ) ) );
-    ui->reg_CE->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.CE ) ) );
-    ui->reg_OVF->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( gemini_system_info.OVF ) ) );
-    //  Set Stack information
-    ui->jmp_stack_depth_label_value->setText( ( QString::fromStdString(
-        gemini_register_value_to_std_string( gemini_system_info.jmp_stack_depth ) ) ) );
-    //  Set Cache information
-    ui->cache_hits_label_value->setText(
-        QString::fromStdString( std::to_string( gemini_system_info.cache_hits ) ) );
-    ui->cache_misses_label_value->setText(
-        QString::fromStdString( std::to_string( gemini_system_info.cache_misses ) ) );
-    ui->cache_mode_label_value->setText( QString::fromStdString(
-        gemini_cache_type_to_std_string( gemini_system_info.cache_type ) ) );
-    ui->inst_count_value->setText(
-        QString::fromStdString(gemini_instruction_count_to_std_string(gemini_system_info.instruction_count)));
-
-}
 
 /*
  * Close the application
@@ -159,18 +104,26 @@ void gemini::on_actionLoad_triggered( )
     if ( text == dob )
     {
         gemini_system.set_cache_type( Cache_type::DIRECT_ONEBLOCK );
+        ui->cache_mode_label_value->setText( QString::fromStdString(
+            gemini_cache_type_to_std_string( Cache_type::DIRECT_ONEBLOCK ) ) );
     }
     else if ( text == dfb )
     {
         gemini_system.set_cache_type( Cache_type::DIRECT_FOURBLOCK );
+        ui->cache_mode_label_value->setText( QString::fromStdString(
+            gemini_cache_type_to_std_string( Cache_type::DIRECT_FOURBLOCK ) ) );
     }
     else if ( text == sob )
     {
         gemini_system.set_cache_type( Cache_type::TWOWAYSET_ONEBLOCK );
+        ui->cache_mode_label_value->setText( QString::fromStdString(
+            gemini_cache_type_to_std_string( Cache_type::TWOWAYSET_ONEBLOCK ) ) );
     }
     else if ( text == sfb )
     {
         gemini_system.set_cache_type( Cache_type::TWOWAYSET_FOURBLOCK );
+        ui->cache_mode_label_value->setText( QString::fromStdString(
+            gemini_cache_type_to_std_string( Cache_type::TWOWAYSET_FOURBLOCK) ) );
     }
 
     //  Set CPU to ready
@@ -178,9 +131,6 @@ void gemini::on_actionLoad_triggered( )
 
     //  Enable the 'next' button
     this->enable_user_interaction( true );
-
-    //  Update the display to show the current cpu state
-    this->gemini_display_callback( );
 }
 
 /*
@@ -192,7 +142,6 @@ void gemini::on_pushButton_clicked( )
     try
     {
         gemini_system.cycle_clock( );
-        this->gemini_display_callback( );
         if (gemini_system.done())
             this->enable_user_interaction( false );
     }
@@ -201,7 +150,6 @@ void gemini::on_pushButton_clicked( )
         QMessageBox *mb = new QMessageBox( this );
         mb->setText( QString::fromStdString( excp.what( ) ) );
         mb->show( ); // Display there was a buffer overflow
-        this->gemini_display_callback( );
         //  invoke an error state
         set_cpu_error( );
         //  shutdown the system
@@ -241,7 +189,6 @@ void gemini::on_pushButton_runall_clicked()
         //  shutdown the system
         gemini_system.power_off( );
     }
-    this->gemini_display_callback( );
     this->enable_user_interaction( false );
 }
 
@@ -249,4 +196,62 @@ void gemini::enable_user_interaction( bool e)
 {
     ui->pushButton->setEnabled(e);
     ui->pushButton_runall->setEnabled(e);
- }
+}
+
+void gemini::on_fetch_done(std::shared_ptr<fetch_signal_info> fsi)
+{
+    ui->reg_PC->setText(
+                QString::fromStdString( gemini_register_value_to_std_string( fsi->PC ) ) );
+    ui->inst_count_value->setText(
+                QString::fromStdString(gemini_instruction_count_to_std_string(fsi->instruction_count)));
+}
+
+void gemini::on_decode_done(std::shared_ptr<decode_signal_info> dsi)
+{
+    ui->reg_IR->setText(
+                QString::fromStdString( gemini_instruction_register_value_to_std_string( dsi->IR ) ) );
+}
+
+void gemini::on_execute_done(std::shared_ptr<execute_signal_info> esi)
+{
+    ui->reg_A->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->A ) ) );
+    ui->reg_B->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->B ) ) );
+    ui->reg_Acc->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->Acc ) ) );
+    ui->reg_Zero->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->Zero ) ) );
+    ui->reg_One->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->One ) ) );
+    ui->reg_MAR->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->MAR ) ) );
+    ui->reg_MDR->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->MDR ) ) );
+    ui->reg_TEMP->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->TEMP ) ) );
+    ui->reg_SL0->setText(
+            QString::fromStdString( gemini_instruction_register_value_to_std_string(esi->SL0)));
+    ui->reg_SL1->setText(
+            QString::fromStdString( gemini_instruction_register_value_to_std_string(esi->SL1)));
+    ui->reg_CC->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->CC ) ) );
+    ui->reg_CE->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->CE ) ) );
+    ui->reg_OVF->setText(
+        QString::fromStdString( gemini_register_value_to_std_string( esi->OVF ) ) );
+    //  Set Stack information
+    ui->jmp_stack_depth_label_value->setText( ( QString::fromStdString(
+        gemini_register_value_to_std_string( esi->jmp_stack_depth ) ) ) );
+
+
+}
+
+void gemini::on_store_done(std::shared_ptr<store_signal_info> ssi)
+{
+    ui->cache_hits_label_value->setText(
+        QString::fromStdString( std::to_string( ssi->cache_hits ) ) );
+    ui->cache_misses_label_value->setText(
+        QString::fromStdString( std::to_string( ssi->cache_misses ) ) );
+
+}

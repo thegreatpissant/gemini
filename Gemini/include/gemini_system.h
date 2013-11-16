@@ -33,10 +33,13 @@
 #include "gemini_types.h"
 #include "cpu.h"
 #include "memory.h"
+#include "gemini.h"
 
 /*
  *  Gemini system : Handles all items in a gemini system: CPU, MEMORY, BUS, IO
  */
+class gemini;
+
 class Gemini_system
 {
 private:
@@ -62,6 +65,9 @@ public:
     bool done();
     //  Retrive some information about the system, for now it is the CPU registers
     Gemini_system_info get_system_info ();
+    //  Set the view class we manipulate
+    gemini * gemini_view;
+    void setView(gemini* view);
 };
 
 #endif // GEMINI_SYSTEM_H

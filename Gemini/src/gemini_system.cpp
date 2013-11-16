@@ -29,6 +29,7 @@
  */
 
 #include "gemini_system.h"
+#include "QtCore"
 
 Gemini_system::Gemini_system()
 {
@@ -97,7 +98,7 @@ Gemini_system_info Gemini_system::get_system_info()
     tmp.MAR = cpu.MAR;
     tmp.MDR = cpu.MDR;
     tmp.TEMP = cpu.TEMP;
-    tmp.IR = cpu.IR;
+//    tmp.IR = cpu.IR;
     tmp.CC = cpu.CC;
     tmp.CE = cpu.CE;
     tmp.OVF = cpu.OVF;
@@ -109,4 +110,11 @@ Gemini_system_info Gemini_system::get_system_info()
     tmp.SL1 = cpu.SL1;
     tmp.instruction_count = cpu.instruction_count;
     return tmp;
+}
+
+void Gemini_system::setView(gemini *view)
+{
+    this->gemini_view = view;
+//    QObject::connect(this->cpu, SIGNAL(fetch_done(std::shared_ptr<fetch_signal_info>)), view, SLOT(on_fetch_done(std::shared_ptr<fetch_signal_info>)));
+    this->cpu.setView( view );
 }

@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     gemini w;
+    gemini_system.setView(&w);
     w.show();
 
     return a.exec();

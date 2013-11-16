@@ -33,12 +33,16 @@
 #include <memory>
 #include <stack>
 
+#include "QObject"
+
 /*
  *  Gemini system CPU: Performs operations and generates clock signals.
  *
  */
-class CPU
+class gemini;
+class CPU : public QObject
 {
+        Q_OBJECT
 private:
     void execute_instruction();  //  Should end up as a function pointer that we use if powered on
     Register_value get_value(Instruction_register ir);
@@ -67,7 +71,6 @@ public:
     Register_value MDR;
     Register_value TEMP;
 
-    Instruction_register IR;
 
     //  32 bit registers
     int32_t SL1;
@@ -89,6 +92,38 @@ public:
     //  Stats
     std::size_t instruction_count;
 
+    //  Branch Prediction
+    int branch_ways {1};
+
+    //  Fetch State Vars
+    struct Fetch_state {
+        Instruction_register IR;
+    };
+
+    //  Decode State Vars
+    struct Decode_state {
+        Instruction_register decode_IR;
+    };
+
+    //  Execute State vars
+    struct Execute_state {
+        Value execute_value;
+        Gemini_op execute_op;
+        Gemini_access_type execute_access_type;
+    };
+
+    //  Store State Vars
+    struct Store_state {
+        Register_value store_Acc;
+        Gemini_op store_op;
+        Value store_value;
+    };
+    //  State States
+    std::shared_ptr<Fetch_state> fetch_state;
+    std::shared_ptr<Decode_state> decode_state;
+    std::shared_ptr<Execute_state> execute_state;
+    std::shared_ptr<Store_state> store_state;
+
     //  External action to initiate a clock tick
     void tick();
 
@@ -109,6 +144,18 @@ public:
 
     //  Has the program finished
     bool done();
+
+    //  Set the view
+private:
+    gemini * gemini_view;
+public:
+    void setView (gemini* view);
+
+signals:
+    void fetch_done (std::shared_ptr<fetch_signal_info>);
+    void decode_done (std::shared_ptr<decode_signal_info>);
+    void execute_done (std::shared_ptr<execute_signal_info>);
+    void store_done (std::shared_ptr<store_signal_info>);
 };
 
 #endif // CPU_H

@@ -37,7 +37,10 @@
  */
 
 #include "cpu.h"
+#include "gemini_system.h"
 #include <stdexcept>
+
+extern Gemini_system gemini_system;
 
 CPU::CPU( )
 {
@@ -52,559 +55,526 @@ void CPU::tick( )
 
 void CPU::execute_instruction( )
 {
-    /* --  FETCH  BEGIN -- */
+    {/* --  FETCH  BEGIN -- */
+        if (fetch_state == NULL)
+            return;
+
+        fetch_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
+        fetch_state->IR = (*byte_code)[PC];
+
+        instruction_count++;
+        decode_state = std::shared_ptr<Decode_state> (new Decode_state);
+        decode_state->decode_IR = fetch_state->IR;
+        //  Emit signal of Fetch state
+        std::shared_ptr<fetch_signal_info> fsi = std::shared_ptr<fetch_signal_info>(new fetch_signal_info);
+        fsi->PC = PC;
+        fsi->instruction_count = instruction_count;
+        emit fetch_done(fsi);
+    }/* --  FETCH END -- */
+
+
+
+    {/* --  DECODE BEGIN -- */
+        if (decode_state == NULL)
+            return;
+        Instruction_register IR = decode_state->decode_IR;
+        Gemini_access_type access_type = get_access_type( decode_state->decode_IR );
+        Gemini_op decode_op = static_cast<Gemini_op>(get_op( decode_state->decode_IR ));
+        //  Temps to hold a/an ...
+        Value value;
+
+        switch ( decode_op )
+        {
+        case Gemini_op::NOTA:
+        case Gemini_op::RET:
+        case Gemini_op::ADDSL:
+        case Gemini_op::SUBSL:
+        case Gemini_op::MULSL:
+        case Gemini_op::DIVSL:
+        case Gemini_op::NOP:
+        case Gemini_op::HLT:
+        case Gemini_op::LABEL:
+        case Gemini_op::EMPTY:
+        case Gemini_op::INVALID:
+            break;
+        case Gemini_op::LDA:
+        case Gemini_op::ADD:
+        case Gemini_op::SUB:
+        case Gemini_op::MUL:
+        case Gemini_op::DIV:
+        case Gemini_op::AND:
+        case Gemini_op::OR:
+        case Gemini_op::SETHI:
+        case Gemini_op::SETLO:
+        case Gemini_op::LDHI:
+        case Gemini_op::LDLO:
+            if (access_type == Gemini_access_type::MEMORY )
+            {
+                value = memory->get_memory( get_value( IR ) );
+            }
+            else if (access_type == Gemini_access_type::VALUE )
+            {
+                value = get_value( IR );
+            }
+            break;
+        case Gemini_op::STA:
+            value = get_value( IR );
+            break;
+        case Gemini_op::JMP:
+            value = get_value( IR );
+            break;
+        case Gemini_op::BA:
+        case Gemini_op::BE:
+        case Gemini_op::BL:
+        case Gemini_op::BG:
+        case Gemini_op::BGE:
+        case Gemini_op::BLE:
+        case Gemini_op::BNE:
+            value = get_value( IR );
+            break;
+            //  @@TODO BRANCHPREDICTION
+            //        if (branch_ways >= 0) {
+            //            PC++;
+            //        } else
+            //            PC = get_value( IR );
+            //        value =
+        }
+        execute_state = std::shared_ptr<Execute_state> (new Execute_state);
+        execute_state->execute_access_type = access_type;
+        execute_state->execute_op = decode_op;
+        execute_state->execute_value = value;
+        //  Emit state of decode
+        std::shared_ptr<decode_signal_info> dsi = std::shared_ptr<decode_signal_info>(new decode_signal_info);
+        dsi->IR = IR;
+        emit decode_done(dsi);
+
+    }/* --  DECODE END   -- */
+
+
+
+    {/* --  EXECUTE BEGIN -- */
+        if (execute_state == NULL)
+            return;
+        Value execute_value = execute_state->execute_value;
+        Gemini_op execute_op = execute_state->execute_op;
+        Gemini_access_type execute_access_type = execute_state->execute_access_type;
+        Instruction_register i32;
+        switch ( execute_op )
+        {
+        case Gemini_op::LDA:
+            Acc = execute_value;
+            PC++;
+            break;
+        case Gemini_op::STA:
+            PC++;
+            break;
+        case Gemini_op::ADD:
+            Acc += execute_value;
+            //  Set less then or equal
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::SUB:
+            Acc -= execute_value;
+            //  Set less then or equal
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::MUL:
+            //  Overflow detection
+            mull = Acc;
+            mull *= execute_value;
+            if ( ((mull & 0x7FFF0000) >> 16) != 0)
+                OVF = 1;
+            else OVF = 0;
+            Acc = (mull & 0xFFFF0000) >> 16;
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::DIV:
+            //  Overflow detection
+            divl = Acc;
+            divl /= execute_value;
+            if ( ((divl & 0x7FFF0000) >> 16) != 0)
+                OVF = 1;
+            else OVF = 0;
+            Acc = (mull & 0xFFFF0000) >> 16;
+            //  Set less then or equal
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::AND:
+            Acc &= execute_value;
+            //  Set less then or equal
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::OR:
+            Acc |= execute_value;
+            //  Set less then or equal
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::NOTA:
+            Acc = ~Acc;
+            //  Set less then or equal
+            if ( Acc > 0 )
+                CC = 2;
+            else if ( Acc < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if ( Acc == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::SETHI:
+            //  0 or 1 specifies what register we are going to be using
+            i32 = 0;
+            i32 |= this->Acc;
+            i32 <<= 16;
+            i32 &= 0xFFFF0000;
+            if (execute_value == 0)
+                this->SL0 |= i32;
+            else if ( execute_value == 1)
+                this->SL1 |= i32;
+            else
+                throw (std::out_of_range("CPU SETHI register access violation"));
+            PC++;
+            break;
+        case Gemini_op::SETLO:
+            i32 = 0x00000000;
+            i32 |= this->Acc;
+            i32 &= 0x0000FFFF;
+            if (execute_value == 0)
+                this->SL0 |= i32;
+            else if ( execute_value == 1)
+                this->SL1 |= i32;
+            else
+                throw (std::out_of_range("CPU SETHLO register access violation"));
+            PC++;
+            break;
+        case Gemini_op::LDHI:
+            //  Load High part of either SL0 or SL1 into the accumilator
+            i32 = 0x00000000;
+            if (execute_value == 0)
+                i32 = SL0;
+            else if ( execute_value == 1)
+                i32 = SL1;
+            else
+                throw (std::out_of_range("CPU SETHLO register access violation"));
+            i32 >>= 16;
+            i32 &= 0x0000FFFF;
+            Acc = 0x00000000;
+            Acc |= i32;
+            PC++;
+            break;
+        case Gemini_op::LDLO:
+            //  Load the low part of either SL0 or SL1 into the accumilator
+            //  Load High part of either SL0 or SL1 into the accumilator
+            i32 = 0;
+            if (execute_value == 0)
+                i32  = SL0;
+            else if ( execute_value == 1)
+                i32 = SL1;
+            else
+                throw (std::out_of_range("CPU SETHLO register access violation"));
+            i32 &= 0x0000FFFF;
+            Acc = 0x00000000;
+            Acc |= i32;
+            PC++;
+            break;
+        case Gemini_op::ADDSL:
+            //  Add SL0 and SL1 and put the result in SL0
+            SL0 += SL1;
+            //  Set less then or equal
+            if ( SL0 > 0 )
+                CC = 2;
+            else if ( SL0 < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if (  SL0 == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::SUBSL:
+            //  Sub SL0 and SL1 and put the result in SL0
+            SL0 -= SL1;
+            //  Set less then or equal
+            if ( SL0 > 0 )
+                CC = 2;
+            else if ( SL0 < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if (  SL0 == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::MULSL:
+            //  Multiply SL0 and SL1 and put the result in SL0
+            SL0 *= SL1;
+            //  Set less then or equal
+            if ( SL0 > 0 )
+                CC = 2;
+            else if ( SL0 < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if (  SL0 == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::DIVSL:
+            //  Divide SL0 and SL1 and put the result in SL0
+            SL0 /= SL1;
+            //  Set less then or equal
+            if ( SL0 > 0 )
+                CC = 2;
+            else if ( SL0 < 0 )
+                CC = 1;
+            else
+                CC = 0;
+            //  Set equal
+            if (  SL0 == 0 )
+                CE = 1;
+            else
+                CE = 0;
+            PC++;
+            break;
+        case Gemini_op::NOP:
+            Acc += 0;
+            PC++;
+            break;
+        case Gemini_op::JMP:
+            if (++jmp_stack_depth > JMP_STACK_MAX_DEPTH)
+                throw (std::out_of_range("Stack overflow"));
+            jmp_stack.push(PC+1);
+            PC = execute_value;
+            break;
+        case Gemini_op::RET:
+            if (--jmp_stack_depth < 0)
+                throw (std::out_of_range("Stack underflow"));
+            PC = jmp_stack.top();
+            jmp_stack.pop();
+            break;
+        case Gemini_op::BA:
+            PC = execute_value;
+            break;
+        case Gemini_op::BE:
+            if ( CE == 1 ) {
+                PC = execute_value;
+                branch_ways -= 1;
+            } else {
+                PC++;
+                branch_ways += 1;
+            }
+            break;
+        case Gemini_op::BL:
+            if ( CC == 1 ) {
+                PC = execute_value;
+                branch_ways -= 1;
+            } else {
+                PC++;
+                branch_ways += 1;
+            }
+            break;
+        case Gemini_op::BG:
+            if ( CC == 2 ) {
+                PC = execute_value;
+                branch_ways -= 1;
+            } else {
+                PC++;
+                branch_ways += 1;
+            }
+            break;
+        case Gemini_op::BGE:
+            if ( CC == 2 && CE == 1 ) {
+                PC = execute_value;
+                branch_ways -= 1;
+            } else {
+                PC ++;
+                branch_ways += 1;
+            }
+            break;
+        case Gemini_op::BLE:
+            if ( CC == 1 && CE == 1 ) {
+                PC = execute_value;
+                branch_ways -= 1;
+            } else {
+                PC++;
+                branch_ways += 1;
+            }
+            break;
+        case Gemini_op::BNE:
+            if ( CE == 0 ) {
+                PC = execute_value;
+                branch_ways -= 1;
+            } else {
+                PC++;
+                branch_ways += 1;
+            }
+            break;
+        case Gemini_op::HLT:
+            PC = (*byte_code).size ();
+            fetch_state = NULL;
+            break;
+        case Gemini_op::LABEL:
+        case Gemini_op::EMPTY:
+        case Gemini_op::INVALID:
+            break;
+        }
+        store_state = std::shared_ptr<Store_state> (new Store_state);
+        store_state->store_Acc = Acc;
+        store_state->store_value = execute_value;
+        store_state->store_op = execute_op;
+        //  Emit Signal of cpu state
+        std::shared_ptr<execute_signal_info> esi = std::shared_ptr<execute_signal_info>(new execute_signal_info);
+        esi->A = this->A;
+        esi->B = this->B;
+        esi->Acc = this->Acc;
+        esi->Zero = this->Zero;
+        esi->One = this->One;
+        esi->MAR = this->MAR;
+        esi->MDR = this->MDR;
+        esi->TEMP = this->TEMP;
+        esi->CC = this->CC;
+        esi->CE = this->CE;
+        esi->OVF = this->OVF;
+        esi->jmp_stack_depth = this->jmp_stack_depth;
+        esi->SL0 = this->SL0;
+        esi->SL1 = this->SL1;
+        emit execute_done(esi);
+    }/* --  EXECUTE END   -- */
+
+
+    {/* --  STORE BEGIN -- */
+        if (store_state == NULL)
+            return;
+        Gemini_op store_op = store_state->store_op;
+        Value store_value = store_state->store_value;
+        Register_value store_Acc = store_state->store_Acc;
+        switch ( store_op )
+        {
+        case Gemini_op::STA:
+            memory->set_memory( store_value, store_Acc );
+            break;
+        case Gemini_op::LDA:
+        case Gemini_op::ADD:
+        case Gemini_op::SUB:
+        case Gemini_op::MUL:
+        case Gemini_op::DIV:
+        case Gemini_op::AND:
+        case Gemini_op::OR:
+        case Gemini_op::NOTA:
+        case Gemini_op::JMP:
+        case Gemini_op::RET:
+        case Gemini_op::BA:
+        case Gemini_op::BE:
+        case Gemini_op::BL:
+        case Gemini_op::BG:
+        case Gemini_op::BGE:
+        case Gemini_op::BLE:
+        case Gemini_op::BNE:
+        case Gemini_op::SETHI:
+        case Gemini_op::SETLO:
+        case Gemini_op::LDHI:
+        case Gemini_op::LDLO:
+        case Gemini_op::ADDSL:
+        case Gemini_op::SUBSL:
+        case Gemini_op::MULSL:
+        case Gemini_op::DIVSL:
+        case Gemini_op::NOP:
+        case Gemini_op::HLT:
+        case Gemini_op::LABEL:
+        case Gemini_op::EMPTY:
+        case Gemini_op::INVALID:
+            break;
+        }
+        //  Emit signal of store state
+        std::shared_ptr<store_signal_info> ssi = std::shared_ptr<store_signal_info>(new store_signal_info);
+        ssi->cache_hits = memory->hits;
+        ssi->cache_misses = memory->misses;
+        emit store_done(ssi);
+    }/* --  STORE END   -- */
+
     if ( PC >= ( *byte_code ).size( ) )
     {
-        return;
+        fetch_state = NULL;
     }
-    this->IR = ( *byte_code )[PC];
-    instruction_count++;
-    /* --  FETCH END -- */
-
-    /* --  DECODE BEGIN -- */
-    Gemini_access_type access_type = get_access_type( IR );
-    Gemini_op op = static_cast<Gemini_op>(get_op( IR ));
-    //  Temps to hold a/an ...
-    Value value;
-    Instruction_register i32;
-    switch ( op )
-    {
-    case Gemini_op::LDA:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::STA:
-        value = get_value( IR );
-        break;
-    case Gemini_op::ADD:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::SUB:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::MUL:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::DIV:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::AND:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::OR:
-        if ( access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if ( access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::NOTA:
-        break;
-    case Gemini_op::JMP:
-        break;
-    case Gemini_op::RET:
-        break;
-    case Gemini_op::BA:
-        value = get_value( IR );
-        break;
-    case Gemini_op::BE:
-        //  @@TODO BRANCHPREDICTION
-//        value =
-        break;
-    case Gemini_op::BL:
-        //  @@TODO BRANCHPREDICTION
-//        value =
-        break;
-    case Gemini_op::BG:
-        //  @@TODO BRANCHPREDICTION
-//        value =
-        break;
-    case Gemini_op::BGE:
-        //  @@TODO BRANCHPREDICTION
-//        value =
-        break;
-    case Gemini_op::BLE:
-        //  @@TODO BRANCHPREDICTION
-//        value =
-        break;
-    case Gemini_op::BNE:
-        //  @@TODO BRANCHPREDICTION
-//        value =
-        break;
-    case Gemini_op::SETHI:
-        if (access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::SETLO:
-        if (access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::LDHI:
-        //  Load High part of either SL0 or SL1 into the accumilator
-        if (access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::LDLO:
-        //  Load the low part of either SL0 or SL1 into the accumilator
-        //  Load High part of either SL0 or SL1 into the accumilator
-        if (access_type == Gemini_access_type::MEMORY )
-        {
-            value = memory->get_memory( get_value( IR ) );
-        }
-        else if (access_type == Gemini_access_type::VALUE )
-        {
-            value = get_value( IR );
-        }
-        break;
-    case Gemini_op::ADDSL:
-        break;
-    case Gemini_op::SUBSL:
-        break;
-    case Gemini_op::MULSL:
-        break;
-    case Gemini_op::DIVSL:
-        break;
-    case Gemini_op::NOP:
-        //  @@TODO  Are we passing a NOP signal down the line
-        break;
-    case Gemini_op::HLT:
-        break;
-    case Gemini_op::LABEL:
-        break;
-    case Gemini_op::EMPTY:
-        break;
-    case Gemini_op::INVALID:
-        break;
-    }
-    /* --  DECODE END   -- */
-
-
-    /* --  EXECUTE BEGIN -- */
-    switch ( op )
-    {
-    case Gemini_op::LDA:
-        Acc = value;
-        PC++;
-        break;
-    case Gemini_op::STA:
-        PC++;
-        break;
-    case Gemini_op::ADD:
-        Acc += value;
-        //  Set less then or equal
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::SUB:
-        Acc -= value;
-        //  Set less then or equal
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::MUL:
-        //  Overflow detection
-        mull = Acc;
-        mull *= value;
-        if ( ((mull & 0x7FFF0000) >> 16) != 0)
-            OVF = 1;
-        else OVF = 0;
-        Acc = (mull & 0xFFFF0000) >> 16;
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::DIV:
-        //  Overflow detection
-        divl = Acc;
-        divl /= value;
-        if ( ((divl & 0x7FFF0000) >> 16) != 0)
-            OVF = 1;
-        else OVF = 0;
-        Acc = (mull & 0xFFFF0000) >> 16;
-        //  Set less then or equal
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::AND:
-        Acc &= value;
-        //  Set less then or equal
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::OR:
-        Acc |= value;
-        //  Set less then or equal
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::NOTA:
-        Acc = ~Acc;
-        //  Set less then or equal
-        if ( Acc > 0 )
-            CC = 2;
-        else if ( Acc < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if ( Acc == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::JMP:
-        if (++jmp_stack_depth > JMP_STACK_MAX_DEPTH)
-            throw (std::out_of_range("Stack overflow"));
-        jmp_stack.push(PC+1);
-        PC = get_value( IR );
-        break;
-    case Gemini_op::RET:
-        if (--jmp_stack_depth < 0)
-            throw (std::out_of_range("Stack underflow"));
-        PC = jmp_stack.top();
-        jmp_stack.pop();
-        break;
-    case Gemini_op::BA:
-        PC = get_value( IR );
-        break;
-    case Gemini_op::BE:
-        if ( CE == 1 )
-            PC = get_value( IR );
-        else
-            PC++;
-        break;
-    case Gemini_op::BL:
-        if ( CC == 1 )
-            PC = get_value( IR );
-        else
-            PC++;
-        break;
-    case Gemini_op::BG:
-        if ( CC == 2 )
-            PC = get_value( IR );
-        else
-            PC++;
-        break;
-    case Gemini_op::BGE:
-        if ( CC == 2 && CE == 1 )
-            PC = get_value ( IR );
-        else
-            PC ++;
-        break;
-    case Gemini_op::BLE:
-        if ( CC == 1 && CE == 1 )
-            PC = get_value ( IR );
-        else
-            PC++;
-        break;
-    case Gemini_op::BNE:
-        if ( CE == 0 )
-            PC = get_value ( IR );
-        else
-            PC++;
-        break;
-    case Gemini_op::SETHI:
-        //  0 or 1 specifies what register we are going to be using
-        i32 = 0;
-        i32 |= this->Acc;
-        i32 <<= 16;
-        i32 &= 0xFFFF0000;
-        if (value == 0)
-            this->SL0 |= i32;
-        else if ( value == 1)
-            this->SL1 |= i32;
-        else
-            throw (std::out_of_range("CPU SETHI register access violation"));
-        PC++;
-        break;
-    case Gemini_op::SETLO:
-        i32 = 0x00000000;
-        i32 |= this->Acc;
-        i32 &= 0x0000FFFF;
-        if (value == 0)
-            this->SL0 |= i32;
-        else if ( value == 1)
-            this->SL1 |= i32;
-        else
-            throw (std::out_of_range("CPU SETHLO register access violation"));
-        PC++;
-        break;
-    case Gemini_op::LDHI:
-        //  Load High part of either SL0 or SL1 into the accumilator
-        i32 = 0x00000000;
-        if (value == 0)
-            i32 = SL0;
-        else if ( value == 1)
-            i32 = SL1;
-        else
-            throw (std::out_of_range("CPU SETHLO register access violation"));
-        i32 >>= 16;
-        i32 &= 0x0000FFFF;
-        Acc = 0x00000000;
-        Acc |= i32;
-        PC++;
-        break;
-    case Gemini_op::LDLO:
-        //  Load the low part of either SL0 or SL1 into the accumilator
-        //  Load High part of either SL0 or SL1 into the accumilator
-        i32 = 0;
-        if (value == 0)
-            i32  = SL0;
-        else if ( value == 1)
-            i32 = SL1;
-        else
-            throw (std::out_of_range("CPU SETHLO register access violation"));
-        i32 &= 0x0000FFFF;
-        Acc = 0x00000000;
-        Acc |= i32;
-        PC++;
-        break;
-    case Gemini_op::ADDSL:
-        //  Add SL0 and SL1 and put the result in SL0
-        SL0 += SL1;
-        //  Set less then or equal
-        if ( SL0 > 0 )
-            CC = 2;
-        else if ( SL0 < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if (  SL0 == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::SUBSL:
-        //  Sub SL0 and SL1 and put the result in SL0
-        SL0 -= SL1;
-        //  Set less then or equal
-        if ( SL0 > 0 )
-            CC = 2;
-        else if ( SL0 < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if (  SL0 == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::MULSL:
-        //  Multiply SL0 and SL1 and put the result in SL0
-        SL0 *= SL1;
-        //  Set less then or equal
-        if ( SL0 > 0 )
-            CC = 2;
-        else if ( SL0 < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if (  SL0 == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::DIVSL:
-        //  Divide SL0 and SL1 and put the result in SL0
-        SL0 /= SL1;
-        //  Set less then or equal
-        if ( SL0 > 0 )
-            CC = 2;
-        else if ( SL0 < 0 )
-            CC = 1;
-        else
-            CC = 0;
-        //  Set equal
-        if (  SL0 == 0 )
-            CE = 1;
-        else
-            CE = 0;
-        PC++;
-        break;
-    case Gemini_op::NOP:
-        Acc += 0;
-        PC++;
-        break;
-    case Gemini_op::HLT:
-        PC = (*byte_code).size ();
-        break;
-    case Gemini_op::LABEL:
-        break;
-    case Gemini_op::EMPTY:
-        break;
-    case Gemini_op::INVALID:
-        break;
-    }
-    /* --  EXECUTE END   -- */
-
-
-    /* --  WRITEBACK BEGIN -- */
-    switch ( op )
-    {
-    case Gemini_op::STA:
-        memory->set_memory( value, Acc );
-        break;
-    case Gemini_op::LDA:
-    case Gemini_op::ADD:
-    case Gemini_op::SUB:
-    case Gemini_op::MUL:
-    case Gemini_op::DIV:
-    case Gemini_op::AND:
-    case Gemini_op::OR:
-    case Gemini_op::NOTA:
-    case Gemini_op::JMP:
-    case Gemini_op::RET:
-    case Gemini_op::BA:
-    case Gemini_op::BE:
-    case Gemini_op::BL:
-    case Gemini_op::BG:
-    case Gemini_op::BGE:
-    case Gemini_op::BLE:
-    case Gemini_op::BNE:
-    case Gemini_op::SETHI:
-    case Gemini_op::SETLO:
-    case Gemini_op::LDHI:
-    case Gemini_op::LDLO:
-    case Gemini_op::ADDSL:
-    case Gemini_op::SUBSL:
-    case Gemini_op::MULSL:
-    case Gemini_op::DIVSL:
-    case Gemini_op::NOP:
-    case Gemini_op::HLT:
-    case Gemini_op::LABEL:
-    case Gemini_op::EMPTY:
-    case Gemini_op::INVALID:
-        break;
-    }
-    /* --  WRITEBACK END   -- */
 }
 
 Register_value CPU::get_value( Instruction_register ir )
@@ -635,17 +605,29 @@ void CPU::initialize( )
     Zero = 0;
     One = 1;
     PC = 0;
-    IR = ( *byte_code )[PC];
+    fetch_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
+    fetch_state->IR = (*byte_code)[PC];
 }
 
 void CPU::halt( )
 {
     PC = byte_code->size( );
+    fetch_state = NULL;
 }
 
 bool CPU::done()
 {
-    return ( PC == byte_code->size () );
+    return ( fetch_state == NULL );
+    //    return ( PC == byte_code->size () );
+}
+
+void CPU::setView(gemini *view)
+{
+    this->gemini_view = view;
+    connect(this, SIGNAL(fetch_done(std::shared_ptr<fetch_signal_info>)), view, SLOT(on_fetch_done(std::shared_ptr<fetch_signal_info>)));
+    connect(this, SIGNAL(decode_done(std::shared_ptr<decode_signal_info>)), view, SLOT(on_decode_done(std::shared_ptr<decode_signal_info>)));
+    connect(this, SIGNAL(execute_done(std::shared_ptr<execute_signal_info>)), view, SLOT(on_execute_done(std::shared_ptr<execute_signal_info>)));
+    connect(this, SIGNAL(store_done(std::shared_ptr<store_signal_info>)), view, SLOT(on_store_done(std::shared_ptr<store_signal_info>)));
 }
 
 void CPU::load_byte_code( std::shared_ptr<Byte_code> bc )
@@ -663,3 +645,4 @@ void CPU::set_cache_mode(Cache_type cache_type)
 {
     memory->set_cache_type( cache_type );
 }
+

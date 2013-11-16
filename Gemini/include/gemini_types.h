@@ -98,6 +98,36 @@ enum class Cache_type {
     TWOWAYSET_FOURBLOCK
 };
 
+
+//  Emit signal state information structs
+struct fetch_signal_info {
+    Register_value PC;
+    std::size_t instruction_count;
+};
+struct decode_signal_info {
+    Instruction_register IR;
+};
+struct execute_signal_info {
+    Register_value A;
+    Register_value B;
+    Register_value Acc;
+    Register_value Zero;
+    Register_value One;
+    Register_value MAR;
+    Register_value MDR;
+    Register_value TEMP;
+    Register_value CC;
+    Register_value CE;
+    Register_value OVF;
+    int jmp_stack_depth;
+    int32_t SL0;
+    int32_t SL1;
+};
+struct store_signal_info {
+    int cache_hits;
+    int cache_misses;
+};
+
 //  Some system information
 struct Gemini_system_info
 {

@@ -50,7 +50,6 @@ class gemini : public QMainWindow
 public:
     explicit gemini(QWidget *parent = 0);
     ~gemini();
-    void gemini_display_callback ();
 
     void set_cpu_error();
 
@@ -69,6 +68,12 @@ private slots:
     void on_pushButton_runall_clicked();
 
     void enable_user_interaction (bool e);
+
+public slots:
+    void on_fetch_done (std::shared_ptr<fetch_signal_info> fsi);
+    void on_decode_done (std::shared_ptr<decode_signal_info> dsi);
+    void on_execute_done (std::shared_ptr<execute_signal_info> esi);
+    void on_store_done (std::shared_ptr<store_signal_info> ssi);
 
 private:
     Ui::gemini *ui;
