@@ -198,7 +198,7 @@ void gemini::enable_user_interaction( bool e)
     ui->pushButton_runall->setEnabled(e);
 }
 
-void gemini::on_fetch_done(std::shared_ptr<fetch_signal_info> fsi)
+void gemini::show_fetch_done(std::shared_ptr<fetch_signal_info> fsi)
 {
     ui->reg_PC->setText(
                 QString::fromStdString( gemini_register_value_to_std_string( fsi->PC ) ) );
@@ -206,13 +206,13 @@ void gemini::on_fetch_done(std::shared_ptr<fetch_signal_info> fsi)
                 QString::fromStdString(gemini_instruction_count_to_std_string(fsi->instruction_count)));
 }
 
-void gemini::on_decode_done(std::shared_ptr<decode_signal_info> dsi)
+void gemini::show_decode_done(std::shared_ptr<decode_signal_info> dsi)
 {
     ui->reg_IR->setText(
                 QString::fromStdString( gemini_instruction_register_value_to_std_string( dsi->IR ) ) );
 }
 
-void gemini::on_execute_done(std::shared_ptr<execute_signal_info> esi)
+void gemini::show_execute_done(std::shared_ptr<execute_signal_info> esi)
 {
     ui->reg_A->setText(
         QString::fromStdString( gemini_register_value_to_std_string( esi->A ) ) );
@@ -247,7 +247,7 @@ void gemini::on_execute_done(std::shared_ptr<execute_signal_info> esi)
 
 }
 
-void gemini::on_store_done(std::shared_ptr<store_signal_info> ssi)
+void gemini::show_store_done(std::shared_ptr<store_signal_info> ssi)
 {
     ui->cache_hits_label_value->setText(
         QString::fromStdString( std::to_string( ssi->cache_hits ) ) );

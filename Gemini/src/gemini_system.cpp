@@ -115,6 +115,5 @@ Gemini_system_info Gemini_system::get_system_info()
 void Gemini_system::setView(gemini *view)
 {
     this->gemini_view = view;
-//    QObject::connect(this->cpu, SIGNAL(fetch_done(std::shared_ptr<fetch_signal_info>)), view, SLOT(on_fetch_done(std::shared_ptr<fetch_signal_info>)));
     this->cpu.setView( view );
 }

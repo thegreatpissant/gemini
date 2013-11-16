@@ -109,7 +109,7 @@ public:
     struct Execute_state {
         Value execute_value;
         Gemini_op execute_op;
-        Gemini_access_type execute_access_type;
+        Gemini_access_type access_type;
     };
 
     //  Store State Vars

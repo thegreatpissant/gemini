@@ -55,7 +55,8 @@ void CPU::tick( )
 
 void CPU::execute_instruction( )
 {
-    {/* --  FETCH  BEGIN -- */
+    /* --  FETCH  BEGIN -- */
+    {
         if (fetch_state == NULL)
             return;
 
@@ -72,18 +73,37 @@ void CPU::execute_instruction( )
         emit fetch_done(fsi);
     }/* --  FETCH END -- */
 
-
-
-    {/* --  DECODE BEGIN -- */
+    /* --  DECODE BEGIN -- */
+    {
         if (decode_state == NULL)
             return;
         Instruction_register IR = decode_state->decode_IR;
-        Gemini_access_type access_type = get_access_type( decode_state->decode_IR );
-        Gemini_op decode_op = static_cast<Gemini_op>(get_op( decode_state->decode_IR ));
+        Gemini_access_type access_type = get_access_type( IR );
+        Gemini_op decode_op = static_cast<Gemini_op>(get_op( IR ));
         //  Temps to hold a/an ...
-        Value value;
+        Value value = get_value( IR );
 
-        switch ( decode_op )
+        execute_state = std::shared_ptr<Execute_state> (new Execute_state);
+        execute_state->execute_op = decode_op;
+        execute_state->access_type = access_type;
+        execute_state->execute_value = value;
+        //  Emit state of decode
+        std::shared_ptr<decode_signal_info> dsi = std::shared_ptr<decode_signal_info>(new decode_signal_info);
+        dsi->IR = IR;
+        emit decode_done(dsi);
+
+    }/* --  DECODE END   -- */
+
+    /* --  EXECUTE BEGIN -- */
+    {
+        if (execute_state == NULL)
+            return;
+        Value execute_value;
+        Gemini_op execute_op = execute_state->execute_op;
+        Instruction_register i32;
+        Gemini_access_type access_type = execute_state->access_type;
+        //  Grab the value used
+        switch ( execute_op )
         {
         case Gemini_op::NOTA:
         case Gemini_op::RET:
@@ -110,18 +130,18 @@ void CPU::execute_instruction( )
         case Gemini_op::LDLO:
             if (access_type == Gemini_access_type::MEMORY )
             {
-                value = memory->get_memory( get_value( IR ) );
+                execute_value = memory->get_memory( execute_state->execute_value );
             }
             else if (access_type == Gemini_access_type::VALUE )
             {
-                value = get_value( IR );
+                execute_value = execute_state->execute_value;
             }
             break;
         case Gemini_op::STA:
-            value = get_value( IR );
+            execute_value = execute_state->execute_value;
             break;
         case Gemini_op::JMP:
-            value = get_value( IR );
+            execute_value = execute_state->execute_value;
             break;
         case Gemini_op::BA:
         case Gemini_op::BE:
@@ -130,7 +150,7 @@ void CPU::execute_instruction( )
         case Gemini_op::BGE:
         case Gemini_op::BLE:
         case Gemini_op::BNE:
-            value = get_value( IR );
+            execute_value = execute_state->execute_value;
             break;
             //  @@TODO BRANCHPREDICTION
             //        if (branch_ways >= 0) {
@@ -139,26 +159,8 @@ void CPU::execute_instruction( )
             //            PC = get_value( IR );
             //        value =
         }
-        execute_state = std::shared_ptr<Execute_state> (new Execute_state);
-        execute_state->execute_access_type = access_type;
-        execute_state->execute_op = decode_op;
-        execute_state->execute_value = value;
-        //  Emit state of decode
-        std::shared_ptr<decode_signal_info> dsi = std::shared_ptr<decode_signal_info>(new decode_signal_info);
-        dsi->IR = IR;
-        emit decode_done(dsi);
 
-    }/* --  DECODE END   -- */
-
-
-
-    {/* --  EXECUTE BEGIN -- */
-        if (execute_state == NULL)
-            return;
-        Value execute_value = execute_state->execute_value;
-        Gemini_op execute_op = execute_state->execute_op;
-        Gemini_access_type execute_access_type = execute_state->execute_access_type;
-        Instruction_register i32;
+        //  Perform the operation
         switch ( execute_op )
         {
         case Gemini_op::LDA:
@@ -502,7 +504,8 @@ void CPU::execute_instruction( )
         store_state->store_value = execute_value;
         store_state->store_op = execute_op;
         //  Emit Signal of cpu state
-        std::shared_ptr<execute_signal_info> esi = std::shared_ptr<execute_signal_info>(new execute_signal_info);
+        std::shared_ptr<execute_signal_info> esi =
+                std::shared_ptr<execute_signal_info>(new execute_signal_info);
         esi->A = this->A;
         esi->B = this->B;
         esi->Acc = this->Acc;
@@ -520,8 +523,8 @@ void CPU::execute_instruction( )
         emit execute_done(esi);
     }/* --  EXECUTE END   -- */
 
-
-    {/* --  STORE BEGIN -- */
+    /* --  STORE BEGIN -- */
+    {
         if (store_state == NULL)
             return;
         Gemini_op store_op = store_state->store_op;
@@ -565,7 +568,8 @@ void CPU::execute_instruction( )
             break;
         }
         //  Emit signal of store state
-        std::shared_ptr<store_signal_info> ssi = std::shared_ptr<store_signal_info>(new store_signal_info);
+        std::shared_ptr<store_signal_info> ssi =
+                std::shared_ptr<store_signal_info>(new store_signal_info);
         ssi->cache_hits = memory->hits;
         ssi->cache_misses = memory->misses;
         emit store_done(ssi);
@@ -607,6 +611,9 @@ void CPU::initialize( )
     PC = 0;
     fetch_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
     fetch_state->IR = (*byte_code)[PC];
+    decode_state = NULL;
+    execute_state = NULL;
+    store_state = NULL;
 }
 
 void CPU::halt( )
@@ -624,10 +631,15 @@ bool CPU::done()
 void CPU::setView(gemini *view)
 {
     this->gemini_view = view;
-    connect(this, SIGNAL(fetch_done(std::shared_ptr<fetch_signal_info>)), view, SLOT(on_fetch_done(std::shared_ptr<fetch_signal_info>)));
-    connect(this, SIGNAL(decode_done(std::shared_ptr<decode_signal_info>)), view, SLOT(on_decode_done(std::shared_ptr<decode_signal_info>)));
-    connect(this, SIGNAL(execute_done(std::shared_ptr<execute_signal_info>)), view, SLOT(on_execute_done(std::shared_ptr<execute_signal_info>)));
-    connect(this, SIGNAL(store_done(std::shared_ptr<store_signal_info>)), view, SLOT(on_store_done(std::shared_ptr<store_signal_info>)));
+    //  The only reason we need the gemini view is to connect our signals to it
+    connect(this, SIGNAL(fetch_done(std::shared_ptr<fetch_signal_info>)),
+            view, SLOT(show_fetch_done(std::shared_ptr<fetch_signal_info>)));
+    connect(this, SIGNAL(decode_done(std::shared_ptr<decode_signal_info>)),
+            view, SLOT(show_decode_done(std::shared_ptr<decode_signal_info>)));
+    connect(this, SIGNAL(execute_done(std::shared_ptr<execute_signal_info>)),
+            view, SLOT(show_execute_done(std::shared_ptr<execute_signal_info>)));
+    connect(this, SIGNAL(store_done(std::shared_ptr<store_signal_info>)),
+            view, SLOT(show_store_done(std::shared_ptr<store_signal_info>)));
 }
 
 void CPU::load_byte_code( std::shared_ptr<Byte_code> bc )
