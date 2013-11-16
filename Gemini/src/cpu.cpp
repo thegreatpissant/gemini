@@ -98,6 +98,7 @@ void CPU::execute_instruction( )
     {
         if (execute_state == NULL)
             return;
+        Value value = execute_state->execute_value;
         Value execute_value;
         Gemini_op execute_op = execute_state->execute_op;
         Instruction_register i32;
@@ -130,18 +131,18 @@ void CPU::execute_instruction( )
         case Gemini_op::LDLO:
             if (access_type == Gemini_access_type::MEMORY )
             {
-                execute_value = memory->get_memory( execute_state->execute_value );
+                execute_value = memory->get_memory( value );
             }
             else if (access_type == Gemini_access_type::VALUE )
             {
-                execute_value = execute_state->execute_value;
+                execute_value = value;
             }
             break;
         case Gemini_op::STA:
-            execute_value = execute_state->execute_value;
+            execute_value = value;
             break;
         case Gemini_op::JMP:
-            execute_value = execute_state->execute_value;
+            execute_value = value;
             break;
         case Gemini_op::BA:
         case Gemini_op::BE:
@@ -150,7 +151,7 @@ void CPU::execute_instruction( )
         case Gemini_op::BGE:
         case Gemini_op::BLE:
         case Gemini_op::BNE:
-            execute_value = execute_state->execute_value;
+            execute_value = value;
             break;
             //  @@TODO BRANCHPREDICTION
             //        if (branch_ways >= 0) {
