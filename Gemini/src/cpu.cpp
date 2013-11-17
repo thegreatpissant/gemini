@@ -45,6 +45,10 @@ extern Gemini_system gemini_system;
 CPU::CPU( )
 {
     jmp_stack_depth = 0;
+    fetch_thread = new Fetch_thread (this);
+    decode_thread = new Decode_thread (this);
+    execute_thread = new Execute_thread (this);
+    store_thread = new Store_thread (this);
 }
 
 void CPU::tick( )
@@ -53,56 +57,163 @@ void CPU::tick( )
     execute_instruction( );
 }
 
+//  Master control for thread continue
 void CPU::execute_instruction( )
+{
+    fetch();
+    decode();
+    execute();
+    store();
+    return;
+    mutex_running_count.lock ();
+    while (running_count > 0)
+    {
+        mutex_running_count.unlock();
+//        sleep(1);
+        mutex_running_count.lock();
+    }
+    running_condition.wakeAll();
+    mutex_running_count.unlock();
+}
+
+void CPU::fetch( )
 {
     /* --  FETCH  BEGIN -- */
     {
-        if (fetch_state == NULL)
+        std::shared_ptr<Fetch_state> fetch_local_state;
+        //  Return if we are stalled
+        mutex_fetch_stalled.lock();
+        if( fetch_stalled ) {
+            mutex_fetch_stalled.unlock();
             return;
-
-        fetch_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
-        fetch_state->IR = (*byte_code)[PC];
+        }
+        mutex_fetch_stalled.unlock();
+        //  LOCK fetch stage local state mutex
+        mutex_fetch_temp_state.lock();
+        //  Do we have a state to execute
+        if (fetch_local_state == NULL)
+        {
+            //  UNLOCK fetch stage temp state
+            mutex_fetch_temp_state.unlock();
+            //  Wait for the decode stage to be done with its temp state
+            mutex_decode_temp_state.lock();
+            while(!decode_temp_state_processed) {
+                mutex_decode_temp_state.unlock();
+                //  @@TODO sleep
+                mutex_decode_temp_state.lock();
+            }
+            //  LOCK the decode stage temp state
+            //  set the decode stage temp state to NULL
+            decode_temp_state = NULL;
+            decode_temp_state_processed = false;
+            //  UNLOCK the decode stage temp state
+            mutex_decode_temp_state.unlock();
+            return;
+        } else {
+            //  copy our temp state to local fetch state
+            fetch_local_state = fetch_temp_state;
+            fetch_local_state->IR = (*byte_code)[PC];
+            fetch_temp_state_processed = true;
+            //  UNLOCK fetch stage temp state mutex
+            mutex_fetch_temp_state.unlock();
+        }
 
         instruction_count++;
-        decode_state = std::shared_ptr<Decode_state> (new Decode_state);
-        decode_state->decode_IR = fetch_state->IR;
+        //  Setup a temporary decode state
+        std::shared_ptr<Decode_state> decode_fetch_state = std::shared_ptr<Decode_state> (new Decode_state);
+        decode_fetch_state->decode_IR = fetch_local_state->IR;
+
         //  Emit signal of Fetch state
         std::shared_ptr<fetch_signal_info> fsi = std::shared_ptr<fetch_signal_info>(new fetch_signal_info);
         fsi->PC = PC;
         fsi->instruction_count = instruction_count;
+
+        //  Wait for decode to be done with its temp state
+        mutex_decode_temp_state.lock();
+        while(!decode_temp_state_processed) {
+            mutex_decode_temp_state.unlock();
+            //  @@TODO sleep
+            mutex_decode_temp_state.lock();
+        }
+        //  LOCK decode stage temp state
+
+        //  Set decode temp state to this decode state
+        decode_temp_state = decode_fetch_state;
+        decode_temp_state_processed = false;
+        //  UNLOCK decode stage temp state
+        mutex_decode_temp_state.unlock();
         emit fetch_done(fsi);
     }/* --  FETCH END -- */
-
+}
+void CPU::decode ( )
+{
+    std::shared_ptr<Decode_state> decode_local_state;
     /* --  DECODE BEGIN -- */
     {
-        if (decode_state == NULL)
+        //  Return if we are stalled
+
+        //  LOCK decode stage local state mutex
+        //  Do we have a decodable state
+        if (decode_local_state == NULL)
+        {
+            //  UNLOCK decode stage state lock
+            //  Wait for the execute stage to be done with its temp
+            //  LOCK execute stage temp state
+            //  set the execute stage temp state to NULL
+            //  UNLOCK the execute stage temp state
             return;
-        Instruction_register IR = decode_state->decode_IR;
+        } else {
+            //  copy decode stage temp state to decode stage local state
+            //  UNLOCK decode stage temp state
+        }
+
+        Instruction_register IR = decode_local_state->decode_IR;
         Gemini_access_type access_type = get_access_type( IR );
         Gemini_op decode_op = static_cast<Gemini_op>(get_op( IR ));
         //  Temps to hold a/an ...
         Value value = get_value( IR );
 
-        execute_state = std::shared_ptr<Execute_state> (new Execute_state);
-        execute_state->execute_op = decode_op;
-        execute_state->access_type = access_type;
-        execute_state->execute_value = value;
+        std::shared_ptr<Execute_state> execute_decode_state = std::shared_ptr<Execute_state> (new Execute_state);
+        execute_decode_state->execute_op = decode_op;
+        execute_decode_state->access_type = access_type;
+        execute_decode_state->execute_value = value;
         //  Emit state of decode
         std::shared_ptr<decode_signal_info> dsi = std::shared_ptr<decode_signal_info>(new decode_signal_info);
         dsi->IR = IR;
+        //  Wait for execute stage to be done with its temp state
+        //  LOCK execute stage temp state
+        //  set execute stage temp state
+        //  UNLOCK execute stage temp state
         emit decode_done(dsi);
+        //  Signal decode stage is done
 
     }/* --  DECODE END   -- */
-
+}
+void CPU::execute ( )
+{
+    std::shared_ptr<Execute_state> execute_local_state;
     /* --  EXECUTE BEGIN -- */
     {
-        if (execute_state == NULL)
+        //  Return if we are stalled
+
+        //  LOCK execute stage local state
+        //  Do we have an executable state
+        if (execute_local_state == NULL) {
+            //  UNLOCK execute stage local state
+            //  Wait for store stage to be done with its temp state
+            //  LOCK store stage temp state
+            //  set store stage temp state to NULL
+            //  UNLOCK store stage temp state
             return;
-        Value value = execute_state->execute_value;
+        } else {
+           //  copy execute stage temp state to execute stage local state
+           //  UNLOCK execute stage temp state
+        }
+        Value value = execute_local_state->execute_value;
         Value execute_value;
-        Gemini_op execute_op = execute_state->execute_op;
+        Gemini_op execute_op = execute_local_state->execute_op;
         Instruction_register i32;
-        Gemini_access_type access_type = execute_state->access_type;
+        Gemini_access_type access_type = execute_local_state->access_type;
         //  Grab the value used
         switch ( execute_op )
         {
@@ -493,17 +604,17 @@ void CPU::execute_instruction( )
             break;
         case Gemini_op::HLT:
             PC = (*byte_code).size ();
-            fetch_state = NULL;
+            fetch_temp_state = NULL;
             break;
         case Gemini_op::LABEL:
         case Gemini_op::EMPTY:
         case Gemini_op::INVALID:
             break;
         }
-        store_state = std::shared_ptr<Store_state> (new Store_state);
-        store_state->store_Acc = Acc;
-        store_state->store_value = execute_value;
-        store_state->store_op = execute_op;
+        std::shared_ptr<Store_state> store_execute_state = std::shared_ptr<Store_state> (new Store_state);
+        store_execute_state->store_Acc = Acc;
+        store_execute_state->store_value = execute_value;
+        store_execute_state->store_op = execute_op;
         //  Emit Signal of cpu state
         std::shared_ptr<execute_signal_info> esi =
                 std::shared_ptr<execute_signal_info>(new execute_signal_info);
@@ -521,16 +632,37 @@ void CPU::execute_instruction( )
         esi->jmp_stack_depth = this->jmp_stack_depth;
         esi->SL0 = this->SL0;
         esi->SL1 = this->SL1;
+        //  Check if store stage temp state is available
+        //  LOCK store stage temp state
+        //  set lock stage temp state
+        //  UNLOCK store state temp state
         emit execute_done(esi);
     }/* --  EXECUTE END   -- */
 
+    if ( PC >= ( *byte_code ).size( ) )
+    {
+        fetch_temp_state = NULL;
+    }
+
+}
+void CPU::store( )
+{
+    std::shared_ptr<Store_state> store_local_state;
     /* --  STORE BEGIN -- */
     {
-        if (store_state == NULL)
+        //  LOCK store stage temp state
+        if (store_local_state == NULL)
+        {
+            //  UNLOCK store stage temp state
             return;
-        Gemini_op store_op = store_state->store_op;
-        Value store_value = store_state->store_value;
-        Register_value store_Acc = store_state->store_Acc;
+        } else {
+           //  Copy store stage temp state to store stage local state
+           //  UNLOCK store stage temp state
+        }
+
+        Gemini_op store_op = store_local_state->store_op;
+        Value store_value = store_local_state->store_value;
+        Register_value store_Acc = store_local_state->store_Acc;
         switch ( store_op )
         {
         case Gemini_op::STA:
@@ -575,11 +707,6 @@ void CPU::execute_instruction( )
         ssi->cache_misses = memory->misses;
         emit store_done(ssi);
     }/* --  STORE END   -- */
-
-    if ( PC >= ( *byte_code ).size( ) )
-    {
-        fetch_state = NULL;
-    }
 }
 
 Register_value CPU::get_value( Instruction_register ir )
@@ -610,22 +737,22 @@ void CPU::initialize( )
     Zero = 0;
     One = 1;
     PC = 0;
-    fetch_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
-    fetch_state->IR = (*byte_code)[PC];
-    decode_state = NULL;
-    execute_state = NULL;
-    store_state = NULL;
+    fetch_temp_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
+    fetch_temp_state->IR = (*byte_code)[PC];
+    decode_temp_state = NULL;
+    execute_temp_state = NULL;
+    store_temp_state = NULL;
 }
 
 void CPU::halt( )
 {
     PC = byte_code->size( );
-    fetch_state = NULL;
+    fetch_temp_state = NULL;
 }
 
 bool CPU::done()
 {
-    return ( fetch_state == NULL );
+    return ( fetch_temp_state == NULL );
     //    return ( PC == byte_code->size () );
 }
 
