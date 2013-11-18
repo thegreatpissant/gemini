@@ -38,17 +38,17 @@
 
 #include "cpu.h"
 #include "gemini_system.h"
-#include <stdexcept>
+
+#include <QThread>
 
 extern Gemini_system gemini_system;
 
 CPU::CPU( )
 {
-    jmp_stack_depth = 0;
-    fetch_thread = new Fetch_thread (this);
-    decode_thread = new Decode_thread (this);
-    execute_thread = new Execute_thread (this);
-    store_thread = new Store_thread (this);
+    fetch_thread = NULL;
+    decode_thread = NULL;
+    execute_thread = NULL;
+    store_thread = NULL;
 }
 
 void CPU::tick( )
@@ -60,663 +60,41 @@ void CPU::tick( )
 //  Master control for thread continue
 void CPU::execute_instruction( )
 {
-    fetch();
-    decode();
-    execute();
-    store();
-    return;
     mutex_running_count.lock ();
     while (running_count > 0)
     {
         mutex_running_count.unlock();
-//        sleep(1);
+        QThread::msleep(100);
         mutex_running_count.lock();
     }
+    pipeline_stats_ptr psp = std::shared_ptr<pipeline_stats_info>(new pipeline_stats_info);
+    psp->decode_count = this->decode_count;
+    psp->decode_halt_count = this->decode_halt_count;
+    psp->execute_count = this->execute_count;
+    psp->execute_halt_count = this->execute_halt_count;
+    psp->fetch_count = this->fetch_count;
+    psp->fetch_halt_count = this->fetch_halt_count;
+    psp->running_count = this->running_count;
+    psp->store_count = this->store_count;
+    psp->fetch_null_count = this->fetch_null_count;
+    psp->decode_null_count = this->decode_null_count;
+    psp->execute_null_count = this->execute_null_count;
+    psp->store_null_count = this->store_null_count;
+    emit pipeline_stats(psp);
+
     running_condition.wakeAll();
     mutex_running_count.unlock();
 }
 
-void CPU::fetch( )
-{
-    /* --  FETCH  BEGIN -- */
-    {
-        std::shared_ptr<Fetch_state> fetch_local_state;
-        //  Return if we are stalled
-        mutex_fetch_stalled.lock();
-        if( fetch_stalled ) {
-            mutex_fetch_stalled.unlock();
-            return;
-        }
-        mutex_fetch_stalled.unlock();
-        //  LOCK fetch stage local state mutex
-        mutex_fetch_temp_state.lock();
-        //  Do we have a state to execute
-        if (fetch_local_state == NULL)
-        {
-            //  UNLOCK fetch stage temp state
-            mutex_fetch_temp_state.unlock();
-            //  Wait for the decode stage to be done with its temp state
-            mutex_decode_temp_state.lock();
-            while(!decode_temp_state_processed) {
-                mutex_decode_temp_state.unlock();
-                //  @@TODO sleep
-                mutex_decode_temp_state.lock();
-            }
-            //  LOCK the decode stage temp state
-            //  set the decode stage temp state to NULL
-            decode_temp_state = NULL;
-            decode_temp_state_processed = false;
-            //  UNLOCK the decode stage temp state
-            mutex_decode_temp_state.unlock();
-            return;
-        } else {
-            //  copy our temp state to local fetch state
-            fetch_local_state = fetch_temp_state;
-            fetch_local_state->IR = (*byte_code)[PC];
-            fetch_temp_state_processed = true;
-            //  UNLOCK fetch stage temp state mutex
-            mutex_fetch_temp_state.unlock();
-        }
 
-        instruction_count++;
-        //  Setup a temporary decode state
-        std::shared_ptr<Decode_state> decode_fetch_state = std::shared_ptr<Decode_state> (new Decode_state);
-        decode_fetch_state->decode_IR = fetch_local_state->IR;
-
-        //  Emit signal of Fetch state
-        std::shared_ptr<fetch_signal_info> fsi = std::shared_ptr<fetch_signal_info>(new fetch_signal_info);
-        fsi->PC = PC;
-        fsi->instruction_count = instruction_count;
-
-        //  Wait for decode to be done with its temp state
-        mutex_decode_temp_state.lock();
-        while(!decode_temp_state_processed) {
-            mutex_decode_temp_state.unlock();
-            //  @@TODO sleep
-            mutex_decode_temp_state.lock();
-        }
-        //  LOCK decode stage temp state
-
-        //  Set decode temp state to this decode state
-        decode_temp_state = decode_fetch_state;
-        decode_temp_state_processed = false;
-        //  UNLOCK decode stage temp state
-        mutex_decode_temp_state.unlock();
-        emit fetch_done(fsi);
-    }/* --  FETCH END -- */
-}
-void CPU::decode ( )
-{
-    std::shared_ptr<Decode_state> decode_local_state;
-    /* --  DECODE BEGIN -- */
-    {
-        //  Return if we are stalled
-
-        //  LOCK decode stage local state mutex
-        //  Do we have a decodable state
-        if (decode_local_state == NULL)
-        {
-            //  UNLOCK decode stage state lock
-            //  Wait for the execute stage to be done with its temp
-            //  LOCK execute stage temp state
-            //  set the execute stage temp state to NULL
-            //  UNLOCK the execute stage temp state
-            return;
-        } else {
-            //  copy decode stage temp state to decode stage local state
-            //  UNLOCK decode stage temp state
-        }
-
-        Instruction_register IR = decode_local_state->decode_IR;
-        Gemini_access_type access_type = get_access_type( IR );
-        Gemini_op decode_op = static_cast<Gemini_op>(get_op( IR ));
-        //  Temps to hold a/an ...
-        Value value = get_value( IR );
-
-        std::shared_ptr<Execute_state> execute_decode_state = std::shared_ptr<Execute_state> (new Execute_state);
-        execute_decode_state->execute_op = decode_op;
-        execute_decode_state->access_type = access_type;
-        execute_decode_state->execute_value = value;
-        //  Emit state of decode
-        std::shared_ptr<decode_signal_info> dsi = std::shared_ptr<decode_signal_info>(new decode_signal_info);
-        dsi->IR = IR;
-        //  Wait for execute stage to be done with its temp state
-        //  LOCK execute stage temp state
-        //  set execute stage temp state
-        //  UNLOCK execute stage temp state
-        emit decode_done(dsi);
-        //  Signal decode stage is done
-
-    }/* --  DECODE END   -- */
-}
-void CPU::execute ( )
-{
-    std::shared_ptr<Execute_state> execute_local_state;
-    /* --  EXECUTE BEGIN -- */
-    {
-        //  Return if we are stalled
-
-        //  LOCK execute stage local state
-        //  Do we have an executable state
-        if (execute_local_state == NULL) {
-            //  UNLOCK execute stage local state
-            //  Wait for store stage to be done with its temp state
-            //  LOCK store stage temp state
-            //  set store stage temp state to NULL
-            //  UNLOCK store stage temp state
-            return;
-        } else {
-           //  copy execute stage temp state to execute stage local state
-           //  UNLOCK execute stage temp state
-        }
-        Value value = execute_local_state->execute_value;
-        Value execute_value;
-        Gemini_op execute_op = execute_local_state->execute_op;
-        Instruction_register i32;
-        Gemini_access_type access_type = execute_local_state->access_type;
-        //  Grab the value used
-        switch ( execute_op )
-        {
-        case Gemini_op::NOTA:
-        case Gemini_op::RET:
-        case Gemini_op::ADDSL:
-        case Gemini_op::SUBSL:
-        case Gemini_op::MULSL:
-        case Gemini_op::DIVSL:
-        case Gemini_op::NOP:
-        case Gemini_op::HLT:
-        case Gemini_op::LABEL:
-        case Gemini_op::EMPTY:
-        case Gemini_op::INVALID:
-            break;
-        case Gemini_op::LDA:
-        case Gemini_op::ADD:
-        case Gemini_op::SUB:
-        case Gemini_op::MUL:
-        case Gemini_op::DIV:
-        case Gemini_op::AND:
-        case Gemini_op::OR:
-        case Gemini_op::SETHI:
-        case Gemini_op::SETLO:
-        case Gemini_op::LDHI:
-        case Gemini_op::LDLO:
-            if (access_type == Gemini_access_type::MEMORY )
-            {
-                execute_value = memory->get_memory( value );
-            }
-            else if (access_type == Gemini_access_type::VALUE )
-            {
-                execute_value = value;
-            }
-            break;
-        case Gemini_op::STA:
-            execute_value = value;
-            break;
-        case Gemini_op::JMP:
-            execute_value = value;
-            break;
-        case Gemini_op::BA:
-        case Gemini_op::BE:
-        case Gemini_op::BL:
-        case Gemini_op::BG:
-        case Gemini_op::BGE:
-        case Gemini_op::BLE:
-        case Gemini_op::BNE:
-            execute_value = value;
-            break;
-            //  @@TODO BRANCHPREDICTION
-            //        if (branch_ways >= 0) {
-            //            PC++;
-            //        } else
-            //            PC = get_value( IR );
-            //        value =
-        }
-
-        //  Perform the operation
-        switch ( execute_op )
-        {
-        case Gemini_op::LDA:
-            Acc = execute_value;
-            PC++;
-            break;
-        case Gemini_op::STA:
-            PC++;
-            break;
-        case Gemini_op::ADD:
-            Acc += execute_value;
-            //  Set less then or equal
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::SUB:
-            Acc -= execute_value;
-            //  Set less then or equal
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::MUL:
-            //  Overflow detection
-            mull = Acc;
-            mull *= execute_value;
-            if ( ((mull & 0x7FFF0000) >> 16) != 0)
-                OVF = 1;
-            else OVF = 0;
-            Acc = (mull & 0xFFFF0000) >> 16;
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::DIV:
-            //  Overflow detection
-            divl = Acc;
-            divl /= execute_value;
-            if ( ((divl & 0x7FFF0000) >> 16) != 0)
-                OVF = 1;
-            else OVF = 0;
-            Acc = (mull & 0xFFFF0000) >> 16;
-            //  Set less then or equal
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::AND:
-            Acc &= execute_value;
-            //  Set less then or equal
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::OR:
-            Acc |= execute_value;
-            //  Set less then or equal
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::NOTA:
-            Acc = ~Acc;
-            //  Set less then or equal
-            if ( Acc > 0 )
-                CC = 2;
-            else if ( Acc < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if ( Acc == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::SETHI:
-            //  0 or 1 specifies what register we are going to be using
-            i32 = 0;
-            i32 |= this->Acc;
-            i32 <<= 16;
-            i32 &= 0xFFFF0000;
-            if (execute_value == 0)
-                this->SL0 |= i32;
-            else if ( execute_value == 1)
-                this->SL1 |= i32;
-            else
-                throw (std::out_of_range("CPU SETHI register access violation"));
-            PC++;
-            break;
-        case Gemini_op::SETLO:
-            i32 = 0x00000000;
-            i32 |= this->Acc;
-            i32 &= 0x0000FFFF;
-            if (execute_value == 0)
-                this->SL0 |= i32;
-            else if ( execute_value == 1)
-                this->SL1 |= i32;
-            else
-                throw (std::out_of_range("CPU SETHLO register access violation"));
-            PC++;
-            break;
-        case Gemini_op::LDHI:
-            //  Load High part of either SL0 or SL1 into the accumilator
-            i32 = 0x00000000;
-            if (execute_value == 0)
-                i32 = SL0;
-            else if ( execute_value == 1)
-                i32 = SL1;
-            else
-                throw (std::out_of_range("CPU SETHLO register access violation"));
-            i32 >>= 16;
-            i32 &= 0x0000FFFF;
-            Acc = 0x00000000;
-            Acc |= i32;
-            PC++;
-            break;
-        case Gemini_op::LDLO:
-            //  Load the low part of either SL0 or SL1 into the accumilator
-            //  Load High part of either SL0 or SL1 into the accumilator
-            i32 = 0;
-            if (execute_value == 0)
-                i32  = SL0;
-            else if ( execute_value == 1)
-                i32 = SL1;
-            else
-                throw (std::out_of_range("CPU SETHLO register access violation"));
-            i32 &= 0x0000FFFF;
-            Acc = 0x00000000;
-            Acc |= i32;
-            PC++;
-            break;
-        case Gemini_op::ADDSL:
-            //  Add SL0 and SL1 and put the result in SL0
-            SL0 += SL1;
-            //  Set less then or equal
-            if ( SL0 > 0 )
-                CC = 2;
-            else if ( SL0 < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if (  SL0 == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::SUBSL:
-            //  Sub SL0 and SL1 and put the result in SL0
-            SL0 -= SL1;
-            //  Set less then or equal
-            if ( SL0 > 0 )
-                CC = 2;
-            else if ( SL0 < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if (  SL0 == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::MULSL:
-            //  Multiply SL0 and SL1 and put the result in SL0
-            SL0 *= SL1;
-            //  Set less then or equal
-            if ( SL0 > 0 )
-                CC = 2;
-            else if ( SL0 < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if (  SL0 == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::DIVSL:
-            //  Divide SL0 and SL1 and put the result in SL0
-            SL0 /= SL1;
-            //  Set less then or equal
-            if ( SL0 > 0 )
-                CC = 2;
-            else if ( SL0 < 0 )
-                CC = 1;
-            else
-                CC = 0;
-            //  Set equal
-            if (  SL0 == 0 )
-                CE = 1;
-            else
-                CE = 0;
-            PC++;
-            break;
-        case Gemini_op::NOP:
-            Acc += 0;
-            PC++;
-            break;
-        case Gemini_op::JMP:
-            if (++jmp_stack_depth > JMP_STACK_MAX_DEPTH)
-                throw (std::out_of_range("Stack overflow"));
-            jmp_stack.push(PC+1);
-            PC = execute_value;
-            break;
-        case Gemini_op::RET:
-            if (--jmp_stack_depth < 0)
-                throw (std::out_of_range("Stack underflow"));
-            PC = jmp_stack.top();
-            jmp_stack.pop();
-            break;
-        case Gemini_op::BA:
-            PC = execute_value;
-            break;
-        case Gemini_op::BE:
-            if ( CE == 1 ) {
-                PC = execute_value;
-                branch_ways -= 1;
-            } else {
-                PC++;
-                branch_ways += 1;
-            }
-            break;
-        case Gemini_op::BL:
-            if ( CC == 1 ) {
-                PC = execute_value;
-                branch_ways -= 1;
-            } else {
-                PC++;
-                branch_ways += 1;
-            }
-            break;
-        case Gemini_op::BG:
-            if ( CC == 2 ) {
-                PC = execute_value;
-                branch_ways -= 1;
-            } else {
-                PC++;
-                branch_ways += 1;
-            }
-            break;
-        case Gemini_op::BGE:
-            if ( CC == 2 && CE == 1 ) {
-                PC = execute_value;
-                branch_ways -= 1;
-            } else {
-                PC ++;
-                branch_ways += 1;
-            }
-            break;
-        case Gemini_op::BLE:
-            if ( CC == 1 && CE == 1 ) {
-                PC = execute_value;
-                branch_ways -= 1;
-            } else {
-                PC++;
-                branch_ways += 1;
-            }
-            break;
-        case Gemini_op::BNE:
-            if ( CE == 0 ) {
-                PC = execute_value;
-                branch_ways -= 1;
-            } else {
-                PC++;
-                branch_ways += 1;
-            }
-            break;
-        case Gemini_op::HLT:
-            PC = (*byte_code).size ();
-            fetch_temp_state = NULL;
-            break;
-        case Gemini_op::LABEL:
-        case Gemini_op::EMPTY:
-        case Gemini_op::INVALID:
-            break;
-        }
-        std::shared_ptr<Store_state> store_execute_state = std::shared_ptr<Store_state> (new Store_state);
-        store_execute_state->store_Acc = Acc;
-        store_execute_state->store_value = execute_value;
-        store_execute_state->store_op = execute_op;
-        //  Emit Signal of cpu state
-        std::shared_ptr<execute_signal_info> esi =
-                std::shared_ptr<execute_signal_info>(new execute_signal_info);
-        esi->A = this->A;
-        esi->B = this->B;
-        esi->Acc = this->Acc;
-        esi->Zero = this->Zero;
-        esi->One = this->One;
-        esi->MAR = this->MAR;
-        esi->MDR = this->MDR;
-        esi->TEMP = this->TEMP;
-        esi->CC = this->CC;
-        esi->CE = this->CE;
-        esi->OVF = this->OVF;
-        esi->jmp_stack_depth = this->jmp_stack_depth;
-        esi->SL0 = this->SL0;
-        esi->SL1 = this->SL1;
-        //  Check if store stage temp state is available
-        //  LOCK store stage temp state
-        //  set lock stage temp state
-        //  UNLOCK store state temp state
-        emit execute_done(esi);
-    }/* --  EXECUTE END   -- */
-
-    if ( PC >= ( *byte_code ).size( ) )
-    {
-        fetch_temp_state = NULL;
-    }
-
-}
-void CPU::store( )
-{
-    std::shared_ptr<Store_state> store_local_state;
-    /* --  STORE BEGIN -- */
-    {
-        //  LOCK store stage temp state
-        if (store_local_state == NULL)
-        {
-            //  UNLOCK store stage temp state
-            return;
-        } else {
-           //  Copy store stage temp state to store stage local state
-           //  UNLOCK store stage temp state
-        }
-
-        Gemini_op store_op = store_local_state->store_op;
-        Value store_value = store_local_state->store_value;
-        Register_value store_Acc = store_local_state->store_Acc;
-        switch ( store_op )
-        {
-        case Gemini_op::STA:
-            memory->set_memory( store_value, store_Acc );
-            break;
-        case Gemini_op::LDA:
-        case Gemini_op::ADD:
-        case Gemini_op::SUB:
-        case Gemini_op::MUL:
-        case Gemini_op::DIV:
-        case Gemini_op::AND:
-        case Gemini_op::OR:
-        case Gemini_op::NOTA:
-        case Gemini_op::JMP:
-        case Gemini_op::RET:
-        case Gemini_op::BA:
-        case Gemini_op::BE:
-        case Gemini_op::BL:
-        case Gemini_op::BG:
-        case Gemini_op::BGE:
-        case Gemini_op::BLE:
-        case Gemini_op::BNE:
-        case Gemini_op::SETHI:
-        case Gemini_op::SETLO:
-        case Gemini_op::LDHI:
-        case Gemini_op::LDLO:
-        case Gemini_op::ADDSL:
-        case Gemini_op::SUBSL:
-        case Gemini_op::MULSL:
-        case Gemini_op::DIVSL:
-        case Gemini_op::NOP:
-        case Gemini_op::HLT:
-        case Gemini_op::LABEL:
-        case Gemini_op::EMPTY:
-        case Gemini_op::INVALID:
-            break;
-        }
-        //  Emit signal of store state
-        std::shared_ptr<store_signal_info> ssi =
-                std::shared_ptr<store_signal_info>(new store_signal_info);
-        ssi->cache_hits = memory->hits;
-        ssi->cache_misses = memory->misses;
-        emit store_done(ssi);
-    }/* --  STORE END   -- */
-}
-
-Register_value CPU::get_value( Instruction_register ir )
+Register_value get_value( Instruction_register ir )
 {
     Instruction_register tmp = ir;
     tmp &= 0x0000FFFF;
     return ( (Register_value)tmp );
 }
 
-Gemini_op_type CPU::get_op( Instruction_register ir )
+Gemini_op_type get_op( Instruction_register ir )
 {
     Instruction_register tmp = ir;
     tmp &= 0xFF000000;
@@ -724,7 +102,7 @@ Gemini_op_type CPU::get_op( Instruction_register ir )
     return ( (Gemini_op_type)tmp );
 }
 
-Gemini_access_type CPU::get_access_type( Instruction_register ir )
+Gemini_access_type get_access_type( Instruction_register ir )
 {
     Instruction_register tmp = ir;
     tmp &= 0x00FF0000;
@@ -734,41 +112,122 @@ Gemini_access_type CPU::get_access_type( Instruction_register ir )
 
 void CPU::initialize( )
 {
+    //  @@TODO fix multiple runs and threads
+    if ( fetch_thread != NULL || decode_thread != NULL || execute_thread != NULL || store_thread != NULL ) {
+        emit stop_threads();
+    }
+    //  Create thread objects
+    fetch_thread = std::shared_ptr<QThread>(new QThread);
+    decode_thread = std::shared_ptr<QThread>(new QThread);
+    execute_thread = std::shared_ptr<QThread>(new QThread);
+    store_thread = std::shared_ptr<QThread>(new QThread);
+    //  Create Worker Objects
+    fetch_worker = std::shared_ptr<Fetch_worker> (new Fetch_worker (this));
+    decode_worker = std::shared_ptr<Decode_worker>  (new Decode_worker (this));
+    execute_worker = std::shared_ptr<Execute_worker> (new Execute_worker (this));
+    store_worker = std::shared_ptr<Store_worker> (new Store_worker (this));
+    fetch_worker->setObjectName("FETCH_THREAD");
+    decode_worker->setObjectName("DECODE_THREAD");
+    execute_worker->setObjectName("EXECUTE_THREAD");
+    store_worker->setObjectName("STORE_THREAD");
+    this->connect_slots();
+    //  Dispatch workers to their threads
+    fetch_worker->moveToThread(&(*fetch_thread));
+    decode_worker->moveToThread(&(*decode_thread));
+    execute_worker->moveToThread(&(*execute_thread));
+    store_worker->moveToThread(&(*store_thread));
+    //  Start thread event loops
+    fetch_thread->start();
+    decode_thread->start();
+    execute_thread->start();
+    store_thread->start();
+    //  Set mutex states All are held by the CPU
     Zero = 0;
     One = 1;
     PC = 0;
-    fetch_temp_state = std::shared_ptr<Fetch_state> ( new Fetch_state );
-    fetch_temp_state->IR = (*byte_code)[PC];
+    jmp_stack_depth = 0;
+    branch_ways = 1;
+    //  Set initial thread states All are held by the CPU
+    fetch_temp_state = std::shared_ptr<Fetch_state> (new Fetch_state );
+    fetch_temp_state->PC = PC;
+    decode_temp_state = NULL;
+    execute_temp_state = NULL;
+    store_temp_state = NULL;
+    fetch_stalled = false;
+    decode_stalled = false;
+    execute_stalled = false;
+    fetch_temp_state_processed = false;
+    decode_temp_state_processed = false;
+    execute_temp_state_processed = false;
+    store_temp_state_processed = false;
+    running_count = 4;
+    mutex_running_count.unlock();
+    mutex_fetch_stalled.unlock();
+    mutex_decode_stalled.unlock();
+    mutex_execute_stalled.unlock();
+    mutex_fetch_temp_state.unlock();
+    mutex_decode_temp_state.unlock();
+    mutex_execute_temp_state.unlock();
+    mutex_store_temp_state.unlock();
+    //  Send thread run event
+    emit start_threads();
+}
+
+void CPU::halt( )
+{
+    fetch_temp_state = NULL;
     decode_temp_state = NULL;
     execute_temp_state = NULL;
     store_temp_state = NULL;
 }
 
-void CPU::halt( )
-{
-    PC = byte_code->size( );
-    fetch_temp_state = NULL;
-}
-
 bool CPU::done()
 {
-    return ( fetch_temp_state == NULL );
-    //    return ( PC == byte_code->size () );
+    return ( fetch_temp_state == NULL && decode_temp_state == NULL
+             && execute_temp_state == NULL && store_temp_state == NULL);
 }
 
 void CPU::setView(gemini *view)
 {
     this->gemini_view = view;
-    //  The only reason we need the gemini view is to connect our signals to it
-    connect(this, SIGNAL(fetch_done(std::shared_ptr<fetch_signal_info>)),
-            view, SLOT(show_fetch_done(std::shared_ptr<fetch_signal_info>)));
-    connect(this, SIGNAL(decode_done(std::shared_ptr<decode_signal_info>)),
-            view, SLOT(show_decode_done(std::shared_ptr<decode_signal_info>)));
-    connect(this, SIGNAL(execute_done(std::shared_ptr<execute_signal_info>)),
-            view, SLOT(show_execute_done(std::shared_ptr<execute_signal_info>)));
-    connect(this, SIGNAL(store_done(std::shared_ptr<store_signal_info>)),
-            view, SLOT(show_store_done(std::shared_ptr<store_signal_info>)));
 }
+void CPU::connect_slots()
+{
+    //  Register datatypes with signal system
+    qRegisterMetaType<fetch_signal_ptr>("fetch_signal_ptr");
+    qRegisterMetaType<decode_signal_ptr>("decode_signal_ptr");
+    qRegisterMetaType<execute_signal_ptr>("execute_signal_ptr");
+    qRegisterMetaType<store_signal_ptr>("store_signal_ptr");
+    qRegisterMetaType<pipeline_stats_ptr>("pipeline_stats_ptr");
+
+    //  Connect view update signals
+    connect(&(*fetch_worker), SIGNAL(fetch_done(fetch_signal_ptr)),
+            this->gemini_view, SLOT(show_fetch_done(fetch_signal_ptr)));
+
+    connect(&(*decode_worker), SIGNAL(decode_done(decode_signal_ptr)),
+            this->gemini_view, SLOT(show_decode_done(decode_signal_ptr)));
+
+    connect(&(*execute_worker), SIGNAL(execute_done(execute_signal_ptr)),
+            this->gemini_view, SLOT(show_execute_done(execute_signal_ptr)));
+
+    connect(&(*store_worker), SIGNAL(store_done(store_signal_ptr)),
+            this->gemini_view, SLOT(show_store_done(store_signal_ptr)));
+
+    connect(this, SIGNAL(pipeline_stats(pipeline_stats_ptr)),
+            this->gemini_view, SLOT(show_pipeline_stats(pipeline_stats_ptr)));
+
+    //  Connect thread running signals
+    connect(this, SIGNAL(start_threads()), &(*fetch_worker), SLOT(doWork()));
+    connect(this, SIGNAL(start_threads()), &(*decode_worker), SLOT(doWork()));
+    connect(this, SIGNAL(start_threads()), &(*execute_worker), SLOT(doWork()));
+    connect(this, SIGNAL(start_threads()), &(*store_worker), SLOT(doWork()));
+
+    connect(this, SIGNAL(stop_threads()), &(*fetch_thread), SLOT(quit()));
+    connect(this, SIGNAL(stop_threads()), &(*decode_thread),SLOT(quit()));
+    connect(this, SIGNAL(stop_threads()), &(*execute_thread), SLOT(quit()));
+    connect(this, SIGNAL(stop_threads()), &(*store_thread), SLOT(quit()));
+}
+
 
 void CPU::load_byte_code( std::shared_ptr<Byte_code> bc )
 {
@@ -786,3 +245,834 @@ void CPU::set_cache_mode(Cache_type cache_type)
     memory->set_cache_type( cache_type );
 }
 
+void Fetch_worker::doWork()   {
+    cpu->mutex_running_count.lock();
+    cpu->running_count--;
+    cpu->mutex_running_count.unlock();
+    forever{
+        cpu->mutex_running_count.lock();
+        cpu->running_condition.wait(&(cpu->mutex_running_count));
+        cpu->running_count++;
+        cpu->mutex_running_count.unlock();
+        /* --  FETCH  BEGIN -- */
+        {
+            std::shared_ptr<Fetch_state> fetch_local_state;
+            //  Return if we are stalled
+            cpu->mutex_fetch_stalled.lock();
+            if( cpu->fetch_stalled ) {
+                cpu->fetch_halt_count++;
+                cpu->mutex_fetch_stalled.unlock();
+                goto fetch_end;
+            }
+            cpu->mutex_fetch_stalled.unlock();
+            //  LOCK fetch stage temp state mutex
+            cpu->mutex_fetch_temp_state.lock();
+            //  Set fetch stage temp state processed
+            cpu->fetch_temp_state_processed = true;
+            //  Do we have a state to execute
+            if (cpu->fetch_temp_state == NULL)
+            {
+                cpu->fetch_temp_state_processed = false;
+                cpu->fetch_null_count++;
+                //  UNLOCK fetch stage temp state
+                cpu->mutex_fetch_temp_state.unlock();
+                //  Wait for the decode stage to be done with its temp state
+                cpu->mutex_decode_temp_state.lock();
+                while(!cpu->decode_temp_state_processed) {
+                    cpu->mutex_decode_temp_state.unlock();
+                    //  @@TODO sleep
+                    QThread::msleep(100);
+                    cpu->mutex_decode_temp_state.lock();
+                }
+                //  LOCK the decode stage temp state (LOCKED)
+                //  set the decode stage temp state to NULL
+                cpu->decode_temp_state = NULL;
+                cpu->decode_temp_state_processed = false;
+                //  UNLOCK the decode stage temp state
+                cpu->mutex_decode_temp_state.unlock();
+                goto fetch_end;
+            } else {
+                //  copy fetch temp state to local fetch state
+                fetch_local_state = cpu->fetch_temp_state;
+                //  UNLOCK fetch stage temp state mutex
+                cpu->mutex_fetch_temp_state.unlock();
+            }
+
+            cpu->instruction_count++;
+            //  Setup a temporary decode state
+            std::shared_ptr<Decode_state> decode_fetch_state = std::shared_ptr<Decode_state> (new Decode_state);
+            decode_fetch_state->PC = fetch_local_state->PC;
+            decode_fetch_state->decode_IR = (*cpu->byte_code)[fetch_local_state->PC];
+
+            //  Setup signal of Fetch state
+            fetch_signal_ptr fsi = std::shared_ptr<fetch_signal_info>(new fetch_signal_info);
+            fsi->PC = fetch_local_state->PC;
+            fsi->instruction_count = cpu->instruction_count;
+
+            //  Setup Decode stage temp state
+            {
+                //  Wait for decode to be done with its temp state
+                cpu->mutex_decode_temp_state.lock();
+                while(!cpu->decode_temp_state_processed) {
+                    cpu->mutex_decode_temp_state.unlock();
+                    //  @@TODO sleep
+                    QThread::msleep(100);
+                    cpu->mutex_decode_temp_state.lock();
+                }
+                //  LOCK decode stage temp state (LOCKED)
+                //  Set decode temp state to this decode state
+                cpu->decode_temp_state = decode_fetch_state;
+                cpu->decode_temp_state_processed = false;
+                //  UNLOCK decode stage temp state
+                cpu->mutex_decode_temp_state.unlock();
+            }
+            //  Send message to the VIEW
+            emit fetch_done(fsi);
+
+            //  Update our next state
+            cpu->mutex_fetch_temp_state.lock();
+            cpu->fetch_temp_state_processed = false;
+            cpu->fetch_temp_state->PC = fetch_local_state->PC++;
+            if ( cpu->fetch_temp_state->PC >= ( *(cpu->byte_code) ).size( ) )
+            {
+                cpu->fetch_temp_state = NULL;
+            }
+            cpu->mutex_fetch_temp_state.unlock();
+
+        }/* --  FETCH END -- */
+fetch_end:
+        cpu->mutex_running_count.lock();
+        cpu->running_count--;
+        cpu->mutex_running_count.unlock();
+    }
+}
+
+void Decode_worker::doWork()  {
+    cpu->mutex_running_count.lock();
+    cpu->running_count--;
+    cpu->mutex_running_count.unlock();
+
+    forever {
+        cpu->mutex_running_count.lock();
+        cpu->running_condition.wait(&(cpu->mutex_running_count));
+        cpu->running_count++;
+        cpu->mutex_running_count.unlock();
+        /* --  DECODE BEGIN -- */
+        {
+            std::shared_ptr<Decode_state> decode_local_state;
+            //  Return if we are stalled
+            cpu->mutex_decode_stalled.lock();
+            if( cpu->decode_stalled ) {
+                cpu->decode_halt_count++;
+                cpu->mutex_decode_stalled.unlock();
+                goto decode_end;
+            }
+            cpu->mutex_decode_stalled.unlock();
+            //  LOCK decode stage temp state mutex
+            cpu->mutex_decode_temp_state.lock();
+            //  Set decode stage temp state processed
+            cpu->decode_temp_state_processed = true;
+            //  Do we have a decodable state
+            if (cpu->decode_temp_state == NULL)
+            {
+                cpu->decode_null_count++;
+                //  UNLOCK decode stage state lock
+                cpu->mutex_decode_temp_state.unlock();
+                //  Wait for the execute stage to be done with its temp
+                cpu->mutex_execute_temp_state.lock();
+                while(!cpu->execute_temp_state_processed) {
+                    cpu->mutex_execute_temp_state.unlock();
+                    //  @@TODO sleep
+                    QThread::msleep(100);
+                    cpu->mutex_execute_temp_state.lock();
+                }
+                //  LOCK execute stage temp state (LOCKED)
+                //  set the execute stage temp state to NULL
+                cpu->execute_temp_state = NULL;
+                cpu->execute_temp_state_processed = false;
+                //  UNLOCK the execute stage temp state
+                cpu->mutex_execute_temp_state.unlock();
+                goto decode_end;
+            } else {
+                //  copy decode stage temp state to decode stage local state
+                decode_local_state = cpu->decode_temp_state;
+                //  UNLOCK decode stage temp state
+                cpu->mutex_decode_temp_state.unlock();
+            }
+
+            Instruction_register IR = decode_local_state->decode_IR;
+            Gemini_access_type access_type = get_access_type( IR );
+            Gemini_op decode_op = static_cast<Gemini_op>(get_op( IR ));
+            //  Temps to hold a/an ...
+            Value value = get_value( IR );
+            std::shared_ptr<Execute_state> execute_decode_state = std::shared_ptr<Execute_state> (new Execute_state);
+            execute_decode_state->execute_op = decode_op;
+            execute_decode_state->access_type = access_type;
+            execute_decode_state->execute_value = value;
+            execute_decode_state->PC = decode_local_state->PC;
+            //  Emit state of decode
+            decode_signal_ptr dsi = std::shared_ptr<decode_signal_info>(new decode_signal_info);
+            dsi->IR = IR;
+            //  Wait for execute stage to be done with its temp state
+            cpu->mutex_execute_temp_state.lock();
+            while(!cpu->execute_temp_state_processed) {
+                cpu->mutex_execute_temp_state.unlock();
+                // @@TODO sleep
+                QThread::msleep(100);
+                cpu->mutex_execute_temp_state.lock();
+            }
+            //  LOCK execute stage temp state (LOCKED)
+
+            //  set execute stage temp state
+            cpu-> execute_temp_state = execute_decode_state;
+            cpu->execute_temp_state_processed = false;
+            //  UNLOCK execute stage temp state
+            cpu->mutex_execute_temp_state.unlock();
+            //  Send message to the VIEW
+            emit decode_done(dsi);
+        }/* --  DECODE END   -- */
+decode_end:
+        cpu->mutex_running_count.lock();
+        cpu->running_count--;
+        cpu->mutex_running_count.unlock();
+    }
+}
+
+void Execute_worker::doWork()  {
+    cpu->mutex_running_count.lock();
+    cpu->running_count--;
+    cpu->mutex_running_count.unlock();
+    forever {
+        cpu->mutex_running_count.lock();
+        cpu->running_condition.wait(&(cpu->mutex_running_count));
+        cpu->running_count++;
+        cpu->mutex_running_count.unlock();
+
+        bool execute_branch;
+        execute_branch = false;
+        Value branch_too;
+        branch_too = 0;
+        /* --  EXECUTE BEGIN -- */
+        {
+            std::shared_ptr<Execute_state> execute_local_state;
+            //  Return if we are stalled
+            cpu->mutex_execute_stalled.lock();
+            if( cpu->execute_stalled ) {
+                cpu->execute_halt_count++;
+                cpu->mutex_execute_stalled.unlock();
+                goto execute_end;
+            }
+            cpu->mutex_execute_stalled.unlock();
+            //  LOCK execute stage temp state
+            cpu->mutex_execute_temp_state.lock();
+            //  Set decode stage temp state processed
+            cpu->execute_temp_state_processed = true;
+            //  Do we have an executable state
+            if (cpu->execute_temp_state == NULL) {
+                cpu->execute_null_count++;
+                //  UNLOCK execute stage local state
+                cpu->mutex_execute_temp_state.unlock();
+                //  Wait for store stage to be done with its temp state
+                cpu->mutex_store_temp_state.lock();
+                while(!cpu->store_temp_state_processed) {
+                    cpu->mutex_store_temp_state.unlock();
+                    //  @@TODO sleep
+                    QThread::msleep(100);
+                    cpu->mutex_store_temp_state.lock();
+                }
+                //  LOCK store stage temp state (LOCKED)
+                //  set store stage temp state to NULL
+                cpu->store_temp_state = NULL;
+                //  UNLOCK store stage temp state
+                cpu->mutex_store_temp_state.unlock();
+                goto execute_end;
+            } else {
+                //  copy execute stage temp state to execute stage local state
+                execute_local_state = cpu->execute_temp_state;
+                cpu->execute_temp_state_processed = true;
+                //  UNLOCK execute stage temp state
+                cpu->mutex_execute_temp_state.unlock();
+            }
+            Value value = execute_local_state->execute_value;
+            Value execute_value;
+            Gemini_op execute_op = execute_local_state->execute_op;
+            Instruction_register i32;
+            Gemini_access_type access_type = execute_local_state->access_type;
+            //  Grab the value used
+            switch ( execute_op )
+            {
+            case Gemini_op::NOTA:
+            case Gemini_op::RET:
+            case Gemini_op::ADDSL:
+            case Gemini_op::SUBSL:
+            case Gemini_op::MULSL:
+            case Gemini_op::DIVSL:
+            case Gemini_op::NOP:
+            case Gemini_op::HLT:
+            case Gemini_op::LABEL:
+            case Gemini_op::EMPTY:
+            case Gemini_op::INVALID:
+                break;
+            case Gemini_op::LDA:
+            case Gemini_op::ADD:
+            case Gemini_op::SUB:
+            case Gemini_op::MUL:
+            case Gemini_op::DIV:
+            case Gemini_op::AND:
+            case Gemini_op::OR:
+            case Gemini_op::SETHI:
+            case Gemini_op::SETLO:
+            case Gemini_op::LDHI:
+            case Gemini_op::LDLO:
+                if (access_type == Gemini_access_type::MEMORY )
+                {
+                    execute_value = cpu->memory->get_memory( value );
+                }
+                else if (access_type == Gemini_access_type::VALUE )
+                {
+                    execute_value = value;
+                }
+                break;
+            case Gemini_op::STA:
+                execute_value = value;
+                break;
+            case Gemini_op::JMP:
+                execute_value = value;
+                break;
+            case Gemini_op::BA:
+            case Gemini_op::BE:
+            case Gemini_op::BL:
+            case Gemini_op::BG:
+            case Gemini_op::BGE:
+            case Gemini_op::BLE:
+            case Gemini_op::BNE:
+                execute_value = value;
+                break;
+                //  @@TODO BRANCHPREDICTION
+                //        if (branch_ways >= 0) {
+                //            PC++;
+                //        } else
+                //            PC = get_value( IR );
+                //        value =
+            }
+
+            //  Perform the operation
+            switch ( execute_op )
+            {
+            case Gemini_op::LDA:
+                cpu->Acc = execute_value;
+//                cpu->PC++;
+                break;
+            case Gemini_op::STA:
+//                cpu->PC++;
+                break;
+            case Gemini_op::ADD:
+                cpu->Acc += execute_value;
+                //  Set less then or equal
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::SUB:
+                cpu->Acc -= execute_value;
+                //  Set less then or equal
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::MUL:
+                //  Overflow detection
+                cpu->mull = cpu->Acc;
+                cpu->mull *= execute_value;
+                if ( ((cpu->mull & 0x7FFF0000) >> 16) != 0)
+                    cpu->OVF = 1;
+                else cpu->OVF = 0;
+                cpu->Acc = (cpu->mull & 0xFFFF0000) >> 16;
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::DIV:
+                //  Overflow detection
+                cpu->divl = cpu->Acc;
+                cpu->divl /= execute_value;
+                if ( ((cpu->divl & 0x7FFF0000) >> 16) != 0)
+                    cpu->OVF = 1;
+                else cpu->OVF = 0;
+                cpu->Acc = (cpu->mull & 0xFFFF0000) >> 16;
+                //  Set less then or equal
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::AND:
+                cpu->Acc &= execute_value;
+                //  Set less then or equal
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::OR:
+                cpu->Acc |= execute_value;
+                //  Set less then or equal
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::NOTA:
+                cpu->Acc = ~(cpu->Acc);
+                //  Set less then or equal
+                if ( cpu->Acc > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->Acc < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if ( cpu->Acc == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::SETHI:
+                //  0 or 1 specifies what register we are going to be using
+                i32 = 0;
+                i32 |= cpu->Acc;
+                i32 <<= 16;
+                i32 &= 0xFFFF0000;
+                if (execute_value == 0)
+                    cpu->SL0 |= i32;
+                else if ( execute_value == 1)
+                    cpu->SL1 |= i32;
+                else
+                    throw (std::out_of_range("CPU SETHI register access violation"));
+//                cpu->PC++;
+                break;
+            case Gemini_op::SETLO:
+                i32 = 0x00000000;
+                i32 |= cpu->Acc;
+                i32 &= 0x0000FFFF;
+                if (execute_value == 0)
+                    cpu->SL0 |= i32;
+                else if ( execute_value == 1)
+                    cpu->SL1 |= i32;
+                else
+                    throw (std::out_of_range("CPU SETHLO register access violation"));
+//                cpu->PC++;
+                break;
+            case Gemini_op::LDHI:
+                //  Load High part of either SL0 or SL1 into the accumilator
+                i32 = 0x00000000;
+                if (execute_value == 0)
+                    i32 = cpu->SL0;
+                else if ( execute_value == 1)
+                    i32 = cpu->SL1;
+                else
+                    throw (std::out_of_range("CPU SETHLO register access violation"));
+                i32 >>= 16;
+                i32 &= 0x0000FFFF;
+                cpu->Acc = 0x00000000;
+                cpu->Acc |= i32;
+//                cpu->PC++;
+                break;
+            case Gemini_op::LDLO:
+                //  Load the low part of either SL0 or SL1 into the accumilator
+                //  Load High part of either SL0 or SL1 into the accumilator
+                i32 = 0;
+                if (execute_value == 0)
+                    i32  = cpu->SL0;
+                else if ( execute_value == 1)
+                    i32 = cpu->SL1;
+                else
+                    throw (std::out_of_range("CPU SETHLO register access violation"));
+                i32 &= 0x0000FFFF;
+                cpu->Acc = 0x00000000;
+                cpu->Acc |= i32;
+//                cpu->PC++;
+                break;
+            case Gemini_op::ADDSL:
+                //  Add SL0 and SL1 and put the result in SL0
+                cpu->SL0 += cpu->SL1;
+                //  Set less then or equal
+                if ( cpu->SL0 > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->SL0 < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if (  cpu->SL0 == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::SUBSL:
+                //  Sub SL0 and SL1 and put the result in SL0
+                cpu->SL0 -= cpu->SL1;
+                //  Set less then or equal
+                if ( cpu->SL0 > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->SL0 < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if (  cpu->SL0 == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::MULSL:
+                //  Multiply SL0 and SL1 and put the result in SL0
+                cpu->SL0 *= cpu->SL1;
+                //  Set less then or equal
+                if ( cpu->SL0 > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->SL0 < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if (  cpu->SL0 == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::DIVSL:
+                //  Divide SL0 and SL1 and put the result in SL0
+                cpu->SL0 /= cpu->SL1;
+                //  Set less then or equal
+                if ( cpu->SL0 > 0 )
+                    cpu->CC = 2;
+                else if ( cpu->SL0 < 0 )
+                    cpu->CC = 1;
+                else
+                    cpu->CC = 0;
+                //  Set equal
+                if (  cpu->SL0 == 0 )
+                    cpu->CE = 1;
+                else
+                    cpu->CE = 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::NOP:
+                cpu->Acc += 0;
+//                cpu->PC++;
+                break;
+            case Gemini_op::JMP:
+                //  @@TODO HANDLE CASE
+                Q_ASSERT ( false );
+                if (++(cpu->jmp_stack_depth) > cpu->JMP_STACK_MAX_DEPTH)
+                { // @@TODO HANDLE CASE
+                    Q_ASSERT ( false );
+                    throw (std::out_of_range("Stack overflow"));
+                }
+                cpu->jmp_stack.push(cpu->PC+1);
+                cpu->PC = execute_value;
+                break;
+            case Gemini_op::RET:
+                //  @@TODO HANDLE CASE
+                Q_ASSERT ( false );
+                if (--(cpu->jmp_stack_depth) < 0)
+                { //  @@TODO HANDLE CASE
+                    Q_ASSERT ( false );
+                    throw (std::out_of_range("Stack underflow"));
+                }
+                cpu->PC = cpu->jmp_stack.top();
+                cpu->jmp_stack.pop();
+                break;
+            case Gemini_op::BA:
+                execute_branch = true;
+                branch_too = execute_value;
+                break;
+            case Gemini_op::BE:
+                if ( cpu->CE == 1 ) {
+                    execute_branch = true;
+                    branch_too = execute_value;
+                    cpu->branch_ways -= 1;
+                } else {
+                    cpu->branch_ways += 1;
+                }
+                break;
+            case Gemini_op::BL:
+                if ( cpu->CC == 1 ) {
+                    execute_branch = true;
+                    branch_too = execute_value;
+                    cpu->branch_ways -= 1;
+                } else {
+                    cpu->branch_ways += 1;
+                }
+                break;
+            case Gemini_op::BG:
+                if ( cpu->CC == 2 ) {
+                    execute_branch = true;
+                    branch_too = execute_value;
+                    cpu->branch_ways -= 1;
+                } else {
+                    cpu->branch_ways += 1;
+                }
+                break;
+            case Gemini_op::BGE:
+                if ( cpu->CC == 2 && cpu->CE == 1 ) {
+                    execute_branch = true;
+                    branch_too = execute_value;
+                    cpu->branch_ways -= 1;
+                } else {
+                    cpu->branch_ways += 1;
+                }
+                break;
+            case Gemini_op::BLE:
+                if ( cpu->CC == 1 && cpu->CE == 1 ) {
+                    execute_branch = true;
+                    branch_too = execute_value;
+                    cpu->branch_ways -= 1;
+                } else {
+                    cpu->branch_ways += 1;
+                }
+                break;
+            case Gemini_op::BNE:
+                if ( cpu->CE == 0 ) {
+                    execute_branch = true;
+                    branch_too = execute_value;
+                   cpu->branch_ways -= 1;
+                } else {
+                    cpu->branch_ways += 1;
+                }
+                break;
+            case Gemini_op::HLT:
+                cpu->fetch_temp_state = NULL;
+                cpu->decode_temp_state = NULL;
+                cpu->execute_temp_state = NULL;
+                cpu->store_temp_state = NULL;
+                break;
+            case Gemini_op::LABEL:
+            case Gemini_op::EMPTY:
+            case Gemini_op::INVALID:
+                break;
+            }
+            if( execute_branch )
+            {
+                //  Wait for Execute temp state processed to be false
+                cpu->mutex_execute_temp_state.lock();
+                while (cpu->execute_temp_state_processed) {
+                    cpu->mutex_execute_temp_state.unlock();
+                    QThread::msleep(100);
+                    cpu->mutex_execute_temp_state.lock();
+                }
+                //  Checkout our predicted branch
+                if (cpu->execute_temp_state->PC != branch_too )
+                {
+                    //  Wait for decode temp state processed to be false
+                    cpu->mutex_decode_temp_state.lock();
+                    while( cpu->decode_temp_state_processed)
+                    {
+                        cpu->mutex_decode_temp_state.unlock();
+                        QThread::msleep(100);
+                        cpu->mutex_decode_temp_state.lock();
+                    }
+                    //  Wait for Fetch temp state processed to be false
+                    cpu->mutex_fetch_temp_state.lock();
+                    while ( cpu->fetch_temp_state_processed )
+                    {
+                        cpu->mutex_fetch_temp_state.unlock();
+                        QThread::msleep(100);
+                        cpu->mutex_fetch_temp_state.lock();
+                    }
+                    //  set decode temp state to NULL
+                    cpu->decode_temp_state = NULL;
+                    //  Null out Execute temp state
+                    cpu->execute_temp_state = NULL;
+                    //  set new fetch PC to branch_too
+                    cpu->fetch_temp_state->PC = branch_too;
+                }
+                cpu->mutex_fetch_temp_state.unlock();
+                cpu->mutex_decode_temp_state.unlock();
+                cpu->mutex_execute_temp_state.unlock();
+            }
+            std::shared_ptr<Store_state> store_execute_state = std::shared_ptr<Store_state> (new Store_state);
+            store_execute_state->store_Acc = cpu->Acc;
+            store_execute_state->store_value = execute_value;
+            store_execute_state->store_op = execute_op;
+            //  Emit Signal of cpu state
+            execute_signal_ptr esi = std::shared_ptr<execute_signal_info>(new execute_signal_info);
+            esi->A = cpu->A;
+            esi->B = cpu->B;
+            esi->Acc = cpu->Acc;
+            esi->Zero = cpu->Zero;
+            esi->One = cpu->One;
+            esi->MAR = cpu->MAR;
+            esi->MDR = cpu->MDR;
+            esi->TEMP = cpu->TEMP;
+            esi->CC = cpu->CC;
+            esi->CE = cpu->CE;
+            esi->OVF = cpu->OVF;
+            esi->jmp_stack_depth = cpu->jmp_stack_depth;
+            esi->SL0 = cpu->SL0;
+            esi->SL1 = cpu->SL1;
+            //  Check if store stage temp state is available
+            cpu->mutex_store_temp_state.lock();
+            while(!cpu->store_temp_state_processed) {
+                cpu->mutex_store_temp_state.unlock();
+                // @@TODO sleep
+                QThread::msleep(100);
+                cpu->mutex_store_temp_state.lock();
+            }
+            //  LOCK store stage temp state (LOCKED)
+            //  set store stage temp state
+            cpu->store_temp_state = store_execute_state;
+            cpu->store_temp_state_processed = false;
+            //  UNLOCK store state temp state
+            cpu->mutex_store_temp_state.unlock();
+            //  Send message to VIEW
+            emit execute_done(esi);
+        }/* --  EXECUTE END   -- */
+execute_end:
+        cpu->mutex_running_count.lock();
+        cpu->running_count--;
+        cpu->mutex_running_count.unlock();
+    }
+}
+
+void Store_worker::doWork() {
+    cpu->mutex_running_count.lock();
+    cpu->running_count--;
+    cpu->mutex_running_count.unlock();
+    forever {
+        cpu->mutex_running_count.lock();
+        cpu->running_condition.wait(&(cpu->mutex_running_count));
+        cpu->running_count++;
+        cpu->mutex_running_count.unlock();
+
+
+        std::shared_ptr<Store_state> store_local_state;
+        /* --  STORE BEGIN -- */
+        {
+            //  LOCK store stage temp state
+            cpu->mutex_store_temp_state.lock();
+            //  Set store stage temp state processed
+            cpu->store_temp_state_processed = true;
+            //  Do we have a store state to execute?
+            if (cpu->store_temp_state == NULL)
+            {
+                cpu->store_null_count ++;
+                //  UNLOCK store stage temp state
+                cpu->mutex_store_temp_state.unlock();
+                goto store_end;
+            } else {
+                //  Copy store stage temp state to store stage local state
+                store_local_state = cpu->store_temp_state;
+                //  UNLOCK store stage temp state
+                cpu->mutex_store_temp_state.unlock();
+            }
+
+            Gemini_op store_op = store_local_state->store_op;
+            Value store_value = store_local_state->store_value;
+            Register_value store_Acc = store_local_state->store_Acc;
+            switch ( store_op )
+            {
+            case Gemini_op::STA:
+                cpu->memory->set_memory( store_value, store_Acc );
+                break;
+            case Gemini_op::LDA:
+            case Gemini_op::ADD:
+            case Gemini_op::SUB:
+            case Gemini_op::MUL:
+            case Gemini_op::DIV:
+            case Gemini_op::AND:
+            case Gemini_op::OR:
+            case Gemini_op::NOTA:
+            case Gemini_op::JMP:
+            case Gemini_op::RET:
+            case Gemini_op::BA:
+            case Gemini_op::BE:
+            case Gemini_op::BL:
+            case Gemini_op::BG:
+            case Gemini_op::BGE:
+            case Gemini_op::BLE:
+            case Gemini_op::BNE:
+            case Gemini_op::SETHI:
+            case Gemini_op::SETLO:
+            case Gemini_op::LDHI:
+            case Gemini_op::LDLO:
+            case Gemini_op::ADDSL:
+            case Gemini_op::SUBSL:
+            case Gemini_op::MULSL:
+            case Gemini_op::DIVSL:
+            case Gemini_op::NOP:
+            case Gemini_op::HLT:
+            case Gemini_op::LABEL:
+            case Gemini_op::EMPTY:
+            case Gemini_op::INVALID:
+                break;
+            }
+            //  Emit signal of store state
+            store_signal_ptr ssi = std::shared_ptr<store_signal_info> (new store_signal_info);
+            ssi->cache_hits = cpu->memory->hits;
+            ssi->cache_misses = cpu->memory->misses;
+            emit store_done(ssi);
+        }/* --  STORE END   -- */
+store_end:
+        cpu->mutex_running_count.lock();
+        cpu->running_count--;
+        cpu->mutex_running_count.unlock();
+    }
+
+}

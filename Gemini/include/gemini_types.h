@@ -33,6 +33,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 //  new type of typedef!!
 //using Register_value = u_int8_t;
@@ -128,6 +129,21 @@ struct store_signal_info {
     int cache_misses;
 };
 
+struct pipeline_stats_info {
+    int running_count;
+    int fetch_count;
+    int decode_count;
+    int execute_count;
+    int store_count;
+    int fetch_halt_count;
+    int decode_halt_count;
+    int execute_halt_count;
+    int fetch_null_count;
+    int decode_null_count;
+    int execute_null_count;
+    int store_null_count;
+};
+
 //  Some system information
 struct Gemini_system_info
 {
@@ -162,5 +178,10 @@ std::string gemini_value_to_std_string ( Value value );
 std::string gemini_cache_type_to_std_string ( Cache_type cache_type );
 std::string gemini_instruction_count_to_std_string (std::size_t instruction_count );
 
+typedef std::shared_ptr<fetch_signal_info> fetch_signal_ptr;
+typedef std::shared_ptr<decode_signal_info> decode_signal_ptr;
+typedef std::shared_ptr<execute_signal_info> execute_signal_ptr;
+typedef std::shared_ptr<store_signal_info> store_signal_ptr;
+typedef std::shared_ptr<pipeline_stats_info> pipeline_stats_ptr;
 
 #endif // GEMINI_TYPES_H

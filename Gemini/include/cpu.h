@@ -32,6 +32,7 @@
 
 #include <memory>
 #include <stack>
+#include <stdexcept>
 
 #include "QObject"
 #include "QThread"
@@ -43,19 +44,43 @@
  *
  */
 class gemini;
-class Fetch_thread;
-class Decode_thread;
-class Execute_thread;
-class Store_thread;
+class Fetch_worker;
+class Decode_worker;
+class Execute_worker;
+class Store_worker;
+
+//  Fetch State Vars
+struct Fetch_state {
+    u_int16_t PC;
+};
+//  Decode State Vars
+struct Decode_state {
+    u_int16_t PC;
+    Instruction_register decode_IR;
+};
+//  Execute State vars
+struct Execute_state {
+    u_int16_t PC;
+    Value execute_value;
+    Gemini_op execute_op;
+    Gemini_access_type access_type;
+};
+//  Store State Vars
+struct Store_state {
+    Register_value store_Acc;
+    Gemini_op store_op;
+    Value store_value;
+};
+
+Register_value get_value(Instruction_register ir);
+Gemini_op_type get_op(Instruction_register ir);
+Gemini_access_type get_access_type(Instruction_register ir);
 
 class CPU : public QObject
 {
-        Q_OBJECT
+    Q_OBJECT
 private:
     void execute_instruction();  //  Should end up as a function pointer that we use if powered on
-    Register_value get_value(Instruction_register ir);
-    Gemini_op_type get_op(Instruction_register ir);
-    Gemini_access_type get_access_type(Instruction_register ir);
 
 public:
     CPU();
@@ -119,8 +144,20 @@ public:
     bool done();
 
     //  ==  PIPELINING  ==
-    //  Thread vars
+    //  Stats
     int running_count = 0;
+    int fetch_count = 0;
+    int decode_count = 0;
+    int execute_count = 0;
+    int store_count = 0;
+    int fetch_halt_count = 0;
+    int decode_halt_count = 0;
+    int execute_halt_count = 0;
+    int fetch_null_count = 0;
+    int decode_null_count = 0;
+    int execute_null_count = 0;
+    int store_null_count = 0;
+    //  Thread vars
     QMutex mutex_running_count;
     QWaitCondition running_condition;
     bool fetch_stalled = false;
@@ -138,36 +175,21 @@ public:
     bool execute_temp_state_processed = false;
     bool store_temp_state_processed = false;
 
-
-
     //  States
     std::size_t instruction_count;
     //  Branch Prediction
     int branch_ways {1};
-    //  Fetch State Vars
-    struct Fetch_state {
-        Instruction_register IR;
-    };
-    //  Decode State Vars
-    struct Decode_state {
-        Instruction_register decode_IR;
-    };
-    //  Execute State vars
-    struct Execute_state {
-        Value execute_value;
-        Gemini_op execute_op;
-        Gemini_access_type access_type;
-    };
-    //  Store State Vars
-    struct Store_state {
-        Register_value store_Acc;
-        Gemini_op store_op;
-        Value store_value;
-    };
-    Fetch_thread *fetch_thread;
-    Decode_thread *decode_thread;
-    Execute_thread *execute_thread;
-    Store_thread *store_thread;
+
+    //  @@TODO chage to uniqe pointer for destruction purposes
+    std::shared_ptr<QThread> fetch_thread;
+    std::shared_ptr<QThread> decode_thread;
+    std::shared_ptr<QThread> execute_thread;
+    std::shared_ptr<QThread> store_thread;
+
+    std::shared_ptr<Fetch_worker> fetch_worker;
+    std::shared_ptr<Decode_worker> decode_worker;
+    std::shared_ptr<Execute_worker> execute_worker;
+    std::shared_ptr<Store_worker> store_worker;
 
     //  Stage States
     std::shared_ptr<Fetch_state> fetch_temp_state;
@@ -179,85 +201,60 @@ private:
     gemini * gemini_view;
 public:
     void setView (gemini* view);
-    void fetch();
-    void decode();
-    void execute();
-    void store();
+    void connect_slots();
 signals:
-    void fetch_done (std::shared_ptr<fetch_signal_info>);
-    void decode_done (std::shared_ptr<decode_signal_info>);
-    void execute_done (std::shared_ptr<execute_signal_info>);
-    void store_done (std::shared_ptr<store_signal_info>);
+    void start_threads ();
+    void stop_threads ();
+    void pipeline_stats (pipeline_stats_ptr);
     //  ==  PIPELINING END  ==
 };
 
-class Fetch_thread :public QThread
+class Fetch_worker :public QObject
 {
     Q_OBJECT
     CPU *cpu;
+public slots:
+    void doWork();
+signals:
+    void fetch_done (fetch_signal_ptr);
 public:
-    void run() Q_DECL_OVERRIDE {
-        cpu->mutex_running_count.lock();
-        cpu->running_condition.wait(&(cpu->mutex_running_count));
-        cpu->running_count++;
-        cpu->mutex_running_count.unlock();
-        cpu->fetch( );
-        cpu->mutex_running_count.lock();
-        cpu->running_count--;
-        cpu->mutex_running_count.unlock();
-    }
-    Fetch_thread ( CPU *c ):cpu{c} {}
+    Fetch_worker ( CPU *c ):cpu{c} {}
 };
-class Decode_thread :public QThread
+
+class Decode_worker :public QObject
 {
     Q_OBJECT
     CPU *cpu;
+public slots:
+    void doWork();
+signals:
+    void decode_done (decode_signal_ptr);
 public:
-    void run() Q_DECL_OVERRIDE {
-        cpu->mutex_running_count.lock();
-        cpu->running_condition.wait(&(cpu->mutex_running_count));
-        cpu->running_count++;
-        cpu->mutex_running_count.unlock();
-        cpu->decode( );
-        cpu->mutex_running_count.lock();
-        cpu->running_count--;
-        cpu->mutex_running_count.unlock();
-    }
-    Decode_thread ( CPU *c ):cpu{c} {}
+    Decode_worker ( CPU *c ):cpu{c} {}
 };
-class Execute_thread :public QThread
+
+class Execute_worker :public QObject
 {
     Q_OBJECT
     CPU *cpu;
+public slots:
+    void doWork();
+signals:
+    void execute_done (execute_signal_ptr);
 public:
-    void run() Q_DECL_OVERRIDE {
-        cpu->mutex_running_count.lock();
-        cpu->running_condition.wait(&(cpu->mutex_running_count));
-        cpu->running_count++;
-        cpu->mutex_running_count.unlock();
-        cpu->execute( );
-        cpu->mutex_running_count.lock();
-        cpu->running_count--;
-        cpu->mutex_running_count.unlock();
-    }
-    Execute_thread ( CPU *c ):cpu{c} {}
+    Execute_worker ( CPU *c ):cpu{c} {}
 };
-class Store_thread :public QThread
+
+class Store_worker :public QObject
 {
     Q_OBJECT
     CPU *cpu;
+public slots:
+    void doWork();
+signals:
+    void store_done (store_signal_ptr);
 public:
-    void run() Q_DECL_OVERRIDE {
-        cpu->mutex_running_count.lock();
-        cpu->running_condition.wait(&(cpu->mutex_running_count));
-        cpu->running_count++;
-        cpu->mutex_running_count.unlock();
-        cpu->store( );
-        cpu->mutex_running_count.lock();
-        cpu->running_count--;
-        cpu->mutex_running_count.unlock();
-    }
-    Store_thread ( CPU *c ):cpu{c} {}
+    Store_worker ( CPU *c ):cpu{c} {}
 };
 
 

@@ -84,34 +84,6 @@ bool Gemini_system::done()
     return cpu.done();
 }
 
-//  Retrive some information about the system, for now it is the CPU registers
-Gemini_system_info Gemini_system::get_system_info()
-{
-    //  Populate the gemini system information struct
-    Gemini_system_info tmp;
-    tmp.A = cpu.A;
-    tmp.B = cpu.B;
-    tmp.Acc = cpu.Acc;
-    tmp.Zero = cpu.Zero;
-    tmp.One = cpu.One;
-    tmp.PC = cpu.PC;
-    tmp.MAR = cpu.MAR;
-    tmp.MDR = cpu.MDR;
-    tmp.TEMP = cpu.TEMP;
-//    tmp.IR = cpu.IR;
-    tmp.CC = cpu.CC;
-    tmp.CE = cpu.CE;
-    tmp.OVF = cpu.OVF;
-    tmp.jmp_stack_depth = cpu.jmp_stack_depth;
-    tmp.cache_hits = memory->hits;
-    tmp.cache_misses = memory->misses;
-    tmp.cache_type = this->cache_type;
-    tmp.SL0 = cpu.SL0;
-    tmp.SL1 = cpu.SL1;
-    tmp.instruction_count = cpu.instruction_count;
-    return tmp;
-}
-
 void Gemini_system::setView(gemini *view)
 {
     this->gemini_view = view;

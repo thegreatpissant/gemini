@@ -198,7 +198,7 @@ void gemini::enable_user_interaction( bool e)
     ui->pushButton_runall->setEnabled(e);
 }
 
-void gemini::show_fetch_done(std::shared_ptr<fetch_signal_info> fsi)
+void gemini::show_fetch_done(fetch_signal_ptr fsi)
 {
     ui->reg_PC->setText(
                 QString::fromStdString( gemini_register_value_to_std_string( fsi->PC ) ) );
@@ -206,52 +206,78 @@ void gemini::show_fetch_done(std::shared_ptr<fetch_signal_info> fsi)
                 QString::fromStdString(gemini_instruction_count_to_std_string(fsi->instruction_count)));
 }
 
-void gemini::show_decode_done(std::shared_ptr<decode_signal_info> dsi)
+void gemini::show_decode_done(decode_signal_ptr dsi)
 {
     ui->reg_IR->setText(
                 QString::fromStdString( gemini_instruction_register_value_to_std_string( dsi->IR ) ) );
 }
 
-void gemini::show_execute_done(std::shared_ptr<execute_signal_info> esi)
+void gemini::show_execute_done(execute_signal_ptr esi)
 {
     ui->reg_A->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->A ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->A ) ) );
     ui->reg_B->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->B ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->B ) ) );
     ui->reg_Acc->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->Acc ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->Acc ) ) );
     ui->reg_Zero->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->Zero ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->Zero ) ) );
     ui->reg_One->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->One ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->One ) ) );
     ui->reg_MAR->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->MAR ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->MAR ) ) );
     ui->reg_MDR->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->MDR ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->MDR ) ) );
     ui->reg_TEMP->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->TEMP ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->TEMP ) ) );
     ui->reg_SL0->setText(
-            QString::fromStdString( gemini_instruction_register_value_to_std_string(esi->SL0)));
+                QString::fromStdString( gemini_instruction_register_value_to_std_string(esi->SL0)));
     ui->reg_SL1->setText(
-            QString::fromStdString( gemini_instruction_register_value_to_std_string(esi->SL1)));
+                QString::fromStdString( gemini_instruction_register_value_to_std_string(esi->SL1)));
     ui->reg_CC->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->CC ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->CC ) ) );
     ui->reg_CE->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->CE ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->CE ) ) );
     ui->reg_OVF->setText(
-        QString::fromStdString( gemini_register_value_to_std_string( esi->OVF ) ) );
+                QString::fromStdString( gemini_register_value_to_std_string( esi->OVF ) ) );
     //  Set Stack information
     ui->jmp_stack_depth_label_value->setText( ( QString::fromStdString(
-        gemini_register_value_to_std_string( esi->jmp_stack_depth ) ) ) );
-
-
+                                                    gemini_register_value_to_std_string( esi->jmp_stack_depth ) ) ) );
 }
 
-void gemini::show_store_done(std::shared_ptr<store_signal_info> ssi)
+void gemini::show_store_done(store_signal_ptr ssi)
 {
     ui->cache_hits_label_value->setText(
-        QString::fromStdString( std::to_string( ssi->cache_hits ) ) );
+                QString::fromStdString( std::to_string( ssi->cache_hits ) ) );
     ui->cache_misses_label_value->setText(
-        QString::fromStdString( std::to_string( ssi->cache_misses ) ) );
-
+                QString::fromStdString( std::to_string( ssi->cache_misses ) ) );
 }
+
+void gemini::show_pipeline_stats(pipeline_stats_ptr psp)
+{
+    ui->decode_count->setText(
+                QString::fromStdString( std::to_string( psp->decode_count)));
+    ui->decode_halt_count->setText(
+                QString::fromStdString( std::to_string( psp->decode_halt_count)));
+    ui->execute_count->setText(
+                QString::fromStdString( std::to_string( psp->execute_count)));
+    ui->execute_halt_count->setText(
+                QString::fromStdString( std::to_string( psp->execute_halt_count)));
+    ui->fetch_count->setText(
+                QString::fromStdString( std::to_string( psp->fetch_count)));
+    ui->fetch_halt_count->setText(
+                QString::fromStdString( std::to_string( psp->fetch_halt_count)));
+    ui->running_count->setText(
+                QString::fromStdString( std::to_string( psp->running_count)));
+    ui->store_count->setText(
+                QString::fromStdString( std::to_string( psp->store_count)));
+    ui->fetch_null_count->setText(
+                QString::fromStdString( std::to_string( psp->fetch_null_count)));
+    ui->decode_null_count->setText(
+                QString::fromStdString( std::to_string( psp->decode_null_count)));
+    ui->execute_null_count->setText(
+                QString::fromStdString( std::to_string( psp->execute_null_count)));
+    ui->store_null_count->setText(
+                QString::fromStdString( std::to_string( psp->store_null_count)));
+}
+

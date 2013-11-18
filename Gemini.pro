@@ -67,4 +67,5 @@ OTHER_FILES += \
     gemini_asm_files/Test_1.c \
     gemini_asm_files/overflow.s \
     gemini_asm_files/recursion.s \
-    gemini_asm_files/sethi_sethl.s
+    gemini_asm_files/sethi_sethl.s \
+    doc/scratchbuffer.txt

@@ -63,8 +63,6 @@ public:
     void tick ();
     //  Is the program done running?
     bool done();
-    //  Retrive some information about the system, for now it is the CPU registers
-    Gemini_system_info get_system_info ();
     //  Set the view class we manipulate
     gemini * gemini_view;
     void setView(gemini* view);
