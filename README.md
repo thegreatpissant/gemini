@@ -40,6 +40,7 @@ Project 2: Cache, Instruction Bytecode
 
 
 Project 3: Gemini Pipelining, Implement the following
+ - Project3 writeup is located at "./doc/jfeister-Project3-writeup.pdf"
  - Part 1: A pipelining architecture within the CPU
    Consists of [Fetch|Decode|eXecute|Memory] stages.
    Seperate each stage into its own thread
