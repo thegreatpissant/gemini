@@ -22,6 +22,13 @@
  * - Extra credit: Overflow on Multiplication and Divide
  * - Extra credit: JMP and RET instructions to support 25 levels of recursion
  * - Extra credit: Allow cache to support 4 memory block grabing at a time
+ * *
+ * Project 3: Gemini Pipelining, Implement the following
+ * - Part 1: A pipelining architecture within the CPU
+ *   Consists of [Fetch|Decode|eXecute|Memory] stages.
+ *   Seperate each stage into its own thread
+ * - Part 2: Branch prediction;
+ *   Based on past results predict future branching
  */
 
 #ifndef CPU_H
@@ -145,7 +152,6 @@ public:
 
     //  ==  PIPELINING  ==
     //  Stats
-    int running_count = 0;
     int fetch_count = 0;
     int decode_count = 0;
     int execute_count = 0;
@@ -158,6 +164,7 @@ public:
     int execute_null_count = 0;
     int store_null_count = 0;
     //  Thread vars
+    int running_count = 0;
     QMutex mutex_running_count;
     QWaitCondition running_condition;
     bool fetch_stalled = false;
@@ -170,15 +177,26 @@ public:
     QMutex mutex_decode_temp_state;
     QMutex mutex_execute_temp_state;
     QMutex mutex_store_temp_state;
+    QMutex mutex_fetch_stage_done;
+    QMutex mutex_decode_stage_done;
+    bool fetch_stage_done = false;
+    bool decode_stage_done = false;
+
     bool fetch_temp_state_processed = false;
     bool decode_temp_state_processed = false;
     bool execute_temp_state_processed = false;
     bool store_temp_state_processed = false;
 
+    bool jump_stack_overflow = false;
+    bool memory_access_overflow = false;
+    bool sethi_access_violation = false;
+    bool setlo_access_violation = false;
+
     //  States
-    std::size_t instruction_count;
+    int clock_count;
     //  Branch Prediction
     int branch_ways {1};
+    bool branch_prediction {false};
 
     //  @@TODO chage to uniqe pointer for destruction purposes
     std::shared_ptr<QThread> fetch_thread;
@@ -206,6 +224,7 @@ signals:
     void start_threads ();
     void stop_threads ();
     void pipeline_stats (pipeline_stats_ptr);
+    void cpu_error( QString );
     //  ==  PIPELINING END  ==
 };
 

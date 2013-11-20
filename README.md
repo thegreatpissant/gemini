@@ -38,3 +38,12 @@ Project 2: Cache, Instruction Bytecode
  - ExtraCredit: 25 deep stack for JMP and RET
  - ExtraCredit: Cache to grab 4 memory blocks durring each fetch.
 
+
+Project 3: Gemini Pipelining, Implement the following
+ - Part 1: A pipelining architecture within the CPU
+   Consists of [Fetch|Decode|eXecute|Memory] stages.
+   Seperate each stage into its own thread
+ - Part 2: Branch prediction;
+   Based on past results predict future branching within fetch stage
+
+

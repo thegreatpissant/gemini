@@ -22,6 +22,13 @@
  * - Extra credit: Overflow on Multiplication and Divide
  * - Extra credit: JMP and RET instructions to support 25 levels of recursion
  * - Extra credit: Allow cache to support 4 memory block grabing at a time
+ * *
+ * Project 3: Gemini Pipelining, Implement the following
+ * - Part 1: A pipelining architecture within the CPU
+ *   Consists of [Fetch|Decode|eXecute|Memory] stages.
+ *   Seperate each stage into its own thread
+ * - Part 2: Branch prediction;
+ *   Based on past results predict future branching
  */
 
 /*
@@ -103,7 +110,6 @@ enum class Cache_type {
 //  Emit signal state information structs
 struct fetch_signal_info {
     Register_value PC;
-    std::size_t instruction_count;
 };
 struct decode_signal_info {
     Instruction_register IR;
@@ -130,7 +136,7 @@ struct store_signal_info {
 };
 
 struct pipeline_stats_info {
-    int running_count;
+    int clock_count;
     int fetch_count;
     int decode_count;
     int execute_count;
@@ -142,6 +148,7 @@ struct pipeline_stats_info {
     int decode_null_count;
     int execute_null_count;
     int store_null_count;
+    int branching_weight;
 };
 
 //  Some system information
@@ -166,7 +173,7 @@ struct Gemini_system_info
     int cache_hits;
     int cache_misses;
     Cache_type cache_type;
-    std::size_t instruction_count;
+    std::size_t clock_count;
 };
 
 std::string gemini_op_to_std_string( Gemini_op gemini_op );
@@ -176,7 +183,7 @@ std::string gemini_instruction_register_to_std_string ( Instruction_register ir 
 std::string gemini_instruction_register_value_to_std_string ( Instruction_register ir );
 std::string gemini_value_to_std_string ( Value value );
 std::string gemini_cache_type_to_std_string ( Cache_type cache_type );
-std::string gemini_instruction_count_to_std_string (std::size_t instruction_count );
+std::string gemini_clock_count_to_std_string (std::size_t clock_count );
 
 typedef std::shared_ptr<fetch_signal_info> fetch_signal_ptr;
 typedef std::shared_ptr<decode_signal_info> decode_signal_ptr;

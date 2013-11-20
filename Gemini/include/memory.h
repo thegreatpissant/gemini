@@ -22,6 +22,13 @@
  * - Extra credit: Overflow on Multiplication and Divide
  * - Extra credit: JMP and RET instructions to support 25 levels of recursion
  * - Extra credit: Allow cache to support 4 memory block grabing at a time
+ * *
+ * Project 3: Gemini Pipelining, Implement the following
+ * - Part 1: A pipelining architecture within the CPU
+ *   Consists of [Fetch|Decode|eXecute|Memory] stages.
+ *   Seperate each stage into its own thread
+ * - Part 2: Branch prediction;
+ *   Based on past results predict future branching
  */
 
 #ifndef MEMORY_H

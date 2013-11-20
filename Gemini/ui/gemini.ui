@@ -818,19 +818,9 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_6">
        <item>
-        <widget class="QLabel" name="label_38">
-         <property name="text">
-          <string>Instruction:</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QLabel" name="label_40">
          <property name="text">
-          <string>Instruction Count</string>
+          <string>Clock Count</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -848,9 +838,19 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_39">
+        <widget class="QLabel" name="label_63">
          <property name="text">
-          <string/>
+          <string>Branch prediction</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_71">
+         <property name="text">
+          <string>Branching weight</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -862,24 +862,7 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_8">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_5">
-         <item>
-          <widget class="QLabel" name="inst_label_value">
-           <property name="midLineWidth">
-            <number>0</number>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QLabel" name="inst_count_value">
+        <widget class="QLabel" name="clock_count_value">
          <property name="midLineWidth">
           <number>0</number>
          </property>
@@ -905,7 +888,20 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="inst_label_value_5">
+        <widget class="QLabel" name="branch_prediction">
+         <property name="midLineWidth">
+          <number>0</number>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="branching_weight">
          <property name="midLineWidth">
           <number>0</number>
          </property>
@@ -951,16 +947,6 @@
          </property>
         </widget>
        </item>
-       <item>
-        <widget class="QLabel" name="label_59">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
       </layout>
      </item>
      <item>
@@ -993,19 +979,6 @@
        </item>
        <item>
         <widget class="QLabel" name="cache_hits_label_value">
-         <property name="midLineWidth">
-          <number>0</number>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="inst_label_value_3">
          <property name="midLineWidth">
           <number>0</number>
          </property>
@@ -1065,13 +1038,6 @@
     <layout class="QHBoxLayout" name="horizontalLayout_9">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_11">
-       <item>
-        <widget class="QLabel" name="label_36">
-         <property name="text">
-          <string>Running Count</string>
-         </property>
-        </widget>
-       </item>
        <item>
         <widget class="QLabel" name="label_37">
          <property name="text">
@@ -1153,16 +1119,6 @@
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_12">
-       <item>
-        <widget class="QLabel" name="running_count">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
        <item>
         <widget class="QLabel" name="fetch_count">
          <property name="text">
