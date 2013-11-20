@@ -528,6 +528,16 @@ void Execute_worker::doWork()  {
     cpu->running_count--;
     cpu->mutex_running_count.unlock();
     bool process_bubble = false;
+    bool branch_stall = false;
+    bool mul_stall = false;
+    int mul_stall_count = 0;
+    bool div_stall = false;
+    int div_stall_count = 0;
+    bool mulsl_stall = false;
+    int mulsl_stall_count = 0;
+    bool divsl_stall = false;
+    int divsl_stall_count = 0;
+    const int mul_div_stall_count = 4;
     bool execute_branch;
     Value branch_too;
     Value value ;
@@ -544,14 +554,138 @@ void Execute_worker::doWork()  {
         cpu->running_count++;
         cpu->mutex_running_count.unlock();
 
-        execute_branch = false;
-        branch_too = 0;
         if( process_bubble ) {
             cpu->execute_count++;
             //  Lock the fetch stalled state
             process_bubble = false;
             goto bubble_resume;
         }
+        if( branch_stall) {
+            branch_stall = false;
+            goto branch_stall_resume;
+        }
+        if( mul_stall) {
+            if (--mul_stall_count == 0){
+                mul_stall = false;
+                goto mul_stall_resume;
+            } else {
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                goto execute_end;
+            }
+        }
+        if( div_stall) {
+            if (--div_stall_count == 0){
+                div_stall = false;
+                goto div_stall_resume;
+            } else {
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                goto execute_end;
+            }
+        }
+        if( divsl_stall) {
+            if (--divsl_stall_count == 0){
+                divsl_stall = false;
+                goto divsl_stall_resume;
+            } else {
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                goto execute_end;
+            }
+        }
+        if( mulsl_stall) {
+            if (--mulsl_stall_count == 0){
+                mulsl_stall = false;
+                goto mulsl_stall_resume;
+            } else {
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                goto execute_end;
+            }
+        }
+        execute_branch = false;
+        branch_too = 0;
         /* --  EXECUTE BEGIN -- */
         {
             //  Return if we are stalled
@@ -737,6 +871,32 @@ bubble_resume:
 //                cpu->PC++;
                 break;
             case Gemini_op::MUL:
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                mul_stall = true;
+                mul_stall_count = mul_div_stall_count;
+                goto execute_end;
+mul_stall_resume:
                 //  Overflow detection
                 cpu->mull = cpu->Acc;
                 cpu->mull *= execute_value;
@@ -758,6 +918,32 @@ bubble_resume:
 //                cpu->PC++;
                 break;
             case Gemini_op::DIV:
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                div_stall = true;
+                div_stall_count = mul_div_stall_count;
+                goto execute_end;
+div_stall_resume:
                 //  Overflow detection
                 cpu->divl = cpu->Acc;
                 cpu->divl /= execute_value;
@@ -922,6 +1108,32 @@ bubble_resume:
 //                cpu->PC++;
                 break;
             case Gemini_op::MULSL:
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                mulsl_stall = true;
+                mulsl_stall_count = mul_div_stall_count;
+                goto execute_end;
+mulsl_stall_resume:
                 //  Multiply SL0 and SL1 and put the result in SL0
                 cpu->SL0 *= cpu->SL1;
                 //  Set less then or equal
@@ -939,6 +1151,32 @@ bubble_resume:
 //                cpu->PC++;
                 break;
             case Gemini_op::DIVSL:
+                //  Wait for execute and fetch
+                //  Wait for decode stage to finish
+                cpu->mutex_decode_stage_done.lock();
+                while( !cpu->decode_stage_done )
+                {
+                    cpu->mutex_decode_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_decode_stage_done.lock();
+                }
+                cpu->mutex_decode_stage_done.unlock();
+                //  Wait for fetch stage to finish
+                cpu->mutex_fetch_stage_done.lock();
+                while( !cpu->fetch_stage_done )
+                {
+                    cpu->mutex_fetch_stage_done.unlock();
+                    QThread::msleep(16);
+                    cpu->mutex_fetch_stage_done.lock();
+                }
+                cpu->mutex_fetch_stage_done.unlock();
+                //  set them to stall
+                cpu->fetch_stalled = true;
+                cpu->decode_stalled = true;
+                divsl_stall = true;
+                divsl_stall_count = mul_div_stall_count;
+                goto execute_end;
+divsl_stall_resume:
                 //  Divide SL0 and SL1 and put the result in SL0
                 cpu->SL0 /= cpu->SL1;
                 //  Set less then or equal
@@ -1072,32 +1310,6 @@ bubble_resume:
                 //  Checkout our predicted branch
                 if (cpu->execute_temp_state->PC != branch_too )
                 {
-//                    //  Wait for decode temp state processed to be false
-//                    cpu->mutex_decode_temp_state.lock();
-//                    while( cpu->decode_temp_state_processed)
-//                    {
-//                        cpu->mutex_decode_temp_state.unlock();
-//                        QThread::msleep(16);
-//                        cpu->mutex_decode_temp_state.lock();
-//                    }
-//                    //  set decode temp state to NULL
-//                    cpu->decode_temp_state = NULL;
-//                    cpu->mutex_decode_temp_state.unlock();
-//                    //  Wait for Fetch temp state processed to be false
-//                    cpu->mutex_fetch_temp_state.lock();
-//                    while ( cpu->fetch_temp_state_processed )
-//                    {
-//                        cpu->mutex_fetch_temp_state.unlock();
-//                        QThread::msleep(16);
-//                        cpu->mutex_fetch_temp_state.lock();
-//                    }
-//                    //  Null out Execute temp state
-//                    cpu->execute_temp_state = NULL;
-//                    //  set new fetch PC to branch_too
-//                    cpu->fetch_temp_state = std::shared_ptr<Fetch_state>(new Fetch_state);
-//                    cpu->fetch_temp_state->PC = branch_too;
-//                    cpu->mutex_fetch_temp_state.unlock();
-//
                     //  Wait for decode stage to finish
                     cpu->mutex_decode_stage_done.lock();
                     while( !cpu->decode_stage_done )
@@ -1116,6 +1328,11 @@ bubble_resume:
                         cpu->mutex_fetch_stage_done.lock();
                     }
                     cpu->mutex_fetch_stage_done.unlock();
+                    cpu->fetch_stalled = true;
+                    cpu->decode_stalled = true;
+                    branch_stall = true;
+                    goto execute_end;
+branch_stall_resume:
                     //  Null out Execute temp state
                     cpu->execute_temp_state = NULL;
                     //  set new fetch PC to branch_too

@@ -207,6 +207,7 @@ void gemini::enable_user_interaction( bool e)
 {
     ui->pushButton->setEnabled(e);
     ui->pushButton_runall->setEnabled(e);
+    ui->pushButton_runall_2->setEnabled(e);
 }
 
 void gemini::show_fetch_done(fetch_signal_ptr fsi)
@@ -302,3 +303,8 @@ void gemini::show_cpu_error(QString error_string)
     mb->show( ); // Display there was a buffer overflow
 }
 
+
+void gemini::on_pushButton_runall_2_clicked()
+{
+    run_all_timer->stop();
+}

@@ -76,6 +76,8 @@ private slots:
 
     void enable_user_interaction (bool e);
 
+    void on_pushButton_runall_2_clicked();
+
 public slots:
     void show_fetch_done (fetch_signal_ptr fsi);
     void show_decode_done (decode_signal_ptr dsi);

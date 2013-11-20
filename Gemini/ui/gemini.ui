@@ -999,7 +999,7 @@
      <rect>
       <x>350</x>
       <y>540</y>
-      <width>206</width>
+      <width>297</width>
       <height>41</height>
      </rect>
     </property>
@@ -1021,6 +1021,16 @@
        </property>
        <property name="text">
         <string>&amp;Run to End</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_runall_2">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>&amp;Stop</string>
        </property>
       </widget>
      </item>
